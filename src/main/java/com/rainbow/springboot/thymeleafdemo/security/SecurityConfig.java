@@ -2,42 +2,130 @@ package com.rainbow.springboot.thymeleafdemo.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.provisioning.JdbcUserDetailsManager;
-import org.springframework.security.provisioning.UserDetailsManager;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 
-import javax.sql.DataSource;
-
+/**
+ * Central security configuration for the application.
+ *
+ * BIG CHANGE from the earlier role-based version of this project:
+ * authorities are no longer fixed ROLE_EMPLOYEE / ROLE_MANAGER / ROLE_ADMIN
+ * values read from a generic Spring-Security-managed "authorities" table.
+ * Instead:
+ *
+ *  - CustomUserDetailsService builds each user's authorities dynamically
+ *    from individually-granted Permission rows (see UserPermission).
+ *  - @EnableMethodSecurity + @PreAuthorize("hasAuthority('CAN_...')") on
+ *    individual Controller methods is now the primary way access is
+ *    enforced for business actions (add/edit/delete employee, etc.) -
+ *    see EmployeeController in the next phase.
+ *  - URL-level rules here are kept DELIBERATELY MINIMAL: just enough to
+ *    (a) allow the public landing page and login page to be viewed by
+ *        anyone, (b) require SOME authentication for everything else, and
+ *    (c) reserve the "/admin/**" system-settings area (privilege granting)
+ *        for the single Super Admin only, via the special SUPER_ADMIN
+ *        authority that only ever exists for that one account.
+ */
 @Configuration
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
+    /**
+     * BCrypt is the industry-standard one-way password hashing algorithm -
+     * this bean is used both when checking a submitted login password and
+     * whenever the Super Admin sets/resets another user's password.
+     */
     @Bean
-    public UserDetailsManager userDetailsManager(DataSource dataSource) {
-
-        return new JdbcUserDetailsManager(dataSource);
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
 
-//    @Bean
-//    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-//
-//        http.authorizeHttpRequests(configurer ->
-//                configurer
-//                        .requestMatchers(HttpMethod.GET, "/employees").hasRole("EMPLOYEE")
-//                        .requestMatchers(HttpMethod.GET, "/employees/**").hasRole("EMPLOYEE")
-//                        .requestMatchers(HttpMethod.POST, "/employees").hasRole("MANAGER")
-//                        .requestMatchers(HttpMethod.PUT, "/employees").hasRole("MANAGER")
-//                        .requestMatchers(HttpMethod.DELETE, "/employees/**").hasRole("ADMIN"));
-//
-//        // use HTTP Basic authentication
-//        http.httpBasic(Customizer.withDefaults());
-//
-//        // disable Cross Site Request Forgery (CSRF)
-//        // in general, not required for stateless REST APIs that use POST, PUT, DELETE and/or PATCH
-//        http.csrf(csrf -> csrf.disable());
-//
-//        return http.build();
-//    }
+    /**
+     * Tracks every currently-logged-in user's HttpSession, keyed by
+     * username. This is what makes permission changes take effect
+     * IMMEDIATELY rather than "the next time the user happens to log in
+     * again": when the Super Admin grants or revokes a privilege,
+     * UserManagementServiceImpl looks up that user's active session(s) here
+     * and expires them, forcing a fresh login (and therefore a freshly
+     * computed set of authorities from CustomUserDetailsService) on their
+     * very next request. Without this, Spring Security would otherwise keep
+     * using the authorities that were computed once, at the time the user
+     * originally logged in, for the entire lifetime of their session.
+     */
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    public DaoAuthenticationProvider authenticationProvider(CustomUserDetailsService userDetailsService,
+                                                              PasswordEncoder passwordEncoder) {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder);
+        return provider;
+    }
+
+    @Bean
+    public SecurityFilterChain filterChain(HttpSecurity http,
+                                            DaoAuthenticationProvider authenticationProvider,
+                                            PrivilegeBasedLoginSuccessHandler loginSuccessHandler) throws Exception {
+
+        http.authenticationProvider(authenticationProvider);
+
+        http.authorizeHttpRequests(configurer -> configurer
+                // Public landing page + login page + static assets: visible with NO login.
+                // No employee/business data is ever served from these URLs.
+                .requestMatchers("/", "/login", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+
+                // System-level settings (granting/revoking privileges, user management)
+                // are reserved for the single Super Admin account only. This is enforced
+                // here at the URL level AND again with @PreAuthorize on the admin
+                // controller methods themselves (defense in depth).
+                .requestMatchers("/admin/**").hasAuthority(CustomUserDetailsService.SUPER_ADMIN_AUTHORITY)
+
+                // Everything else just requires SOME authenticated account;
+                // the SPECIFIC business action (view/add/edit/delete/etc.) is
+                // then checked per-method with @PreAuthorize based on the
+                // user's individually-granted permissions.
+                .anyRequest().authenticated());
+
+        // Custom login page (a dedicated /login view, never a direct dashboard),
+        // with a success handler that redirects based on the user's actual
+        // granted privileges rather than a fixed role (see
+        // PrivilegeBasedLoginSuccessHandler for the exact rules).
+        http.formLogin(form -> form
+                .loginPage("/login")
+                .successHandler(loginSuccessHandler)
+                .permitAll());
+
+        http.logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessUrl("/")
+                .permitAll());
+
+        // A friendly "you're not allowed to do that" page instead of a raw 403
+        // when @PreAuthorize denies a request - see GlobalExceptionHandler's
+        // AccessDeniedException handler, and templates/error.html.
+        http.exceptionHandling(handler -> handler
+                .accessDeniedPage("/access-denied"));
+
+        // Registers every new login in the SessionRegistry (see its javadoc
+        // above) and, once a session has been invalidated via that registry,
+        // sends the user back to the login page with an explanatory message
+        // instead of a confusing generic error.
+        http.sessionManagement(session -> session
+                .maximumSessions(1)
+                .sessionRegistry(sessionRegistry())
+                .expiredUrl("/login?expired"));
+
+        return http.build();
+    }
 }

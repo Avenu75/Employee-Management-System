@@ -1,56 +1,102 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
 <head>
-    <!-- Required meta tags -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>Save Employee</title>
 </head>
+<body class="bg-light">
 
-<body>
+<div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container">
+<div class="container mt-4 mb-5">
 
-    <h3>Employee Directory</h3>
-    <hr>
+    <div class="card shadow-sm" style="max-width: 700px; margin: 0 auto;">
+        <div class="card-body">
+            <h4 class="card-title mb-4" th:text="${employee.id == 0} ? 'Add New Employee' : 'Update Employee'"></h4>
 
-    <p class="h4 mb-4">Save Employee</p>
+            <form th:action="@{/employees/save}" th:object="${employee}" method="POST">
 
-    <form action="#" th:action="@{/employees/save}"
-          th:object="${employee}" method="POST">
+                <input type="hidden" th:field="*{id}">
 
-        <input type="hidden" th:field="*{id}">
+                <div class="mb-3">
+                    <label class="form-label">First Name</label>
+                    <input type="text" th:field="*{firstName}" class="form-control"
+                           th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+                </div>
 
-        <input type="text" th:field="*{firstName}"
-               class="form-control mb-4 w-25" placeholder="First name">
+                <div class="mb-3">
+                    <label class="form-label">Last Name</label>
+                    <input type="text" th:field="*{lastName}" class="form-control"
+                           th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+                </div>
 
-        <input type="text" th:field="*{lastName}"
-               class="form-control mb-4 w-25" placeholder="Last name">
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <input type="text" th:field="*{email}" class="form-control"
+                           th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                </div>
 
-        <input type="text" th:field="*{email}"
-               class="form-control mb-4 w-25" placeholder="Email">
+                <div class="mb-3">
+                    <label class="form-label">Phone Number</label>
+                    <input type="text" th:field="*{phoneNumber}" class="form-control"
+                           th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid'"
+                           placeholder="e.g. 024-555-0101">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+                </div>
 
-        <button type="submit" class="btn btn-info col-2">Save</button>
+                <div class="mb-3">
+                    <label class="form-label">Job Title</label>
+                    <input type="text" th:field="*{jobTitle}" class="form-control"
+                           th:classappend="${#fields.hasErrors('jobTitle')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('jobTitle')}" th:errors="*{jobTitle}"></div>
+                </div>
 
-    </form>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Salary ($)</label>
+                        <input type="number" step="0.01" th:field="*{salary}" class="form-control"
+                               th:classappend="${#fields.hasErrors('salary')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('salary')}" th:errors="*{salary}"></div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Hire Date</label>
+                        <input type="date" th:field="*{hireDate}" class="form-control"
+                               th:classappend="${#fields.hasErrors('hireDate')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('hireDate')}" th:errors="*{hireDate}"></div>
+                    </div>
+                </div>
 
-    <hr>
-    <a th:href="@{/employees/list}">Back to Employees List</a>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Department</label>
+                        <select th:field="*{department}" class="form-select">
+                            <option value="">-- None --</option>
+                            <option th:each="dept : ${departments}"
+                                    th:value="${dept.id}"
+                                    th:text="${dept.name}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Status</label>
+                        <select th:field="*{status}" class="form-select">
+                            <option th:each="s : ${T(com.rainbow.springboot.thymeleafdemo.entity.EmployeeStatus).values()}"
+                                    th:value="${s}" th:text="${s}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">💾 Save</button>
+                <a th:href="@{/employees/list}" class="btn btn-outline-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
 
 </div>
 
-
 </body>
-
 </html>
-
-
-
-
-
-

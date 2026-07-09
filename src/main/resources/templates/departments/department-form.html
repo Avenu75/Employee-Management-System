@@ -1,0 +1,43 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Save Department</title>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container mt-4 mb-5">
+    <div class="card shadow-sm" style="max-width: 600px; margin: 0 auto;">
+        <div class="card-body">
+            <h4 class="card-title mb-4" th:text="${department.id == 0} ? 'Add Department' : 'Update Department'"></h4>
+
+            <form th:action="@{/departments/save}" th:object="${department}" method="POST">
+                <input type="hidden" th:field="*{id}">
+
+                <div class="mb-3">
+                    <label class="form-label">Department Name</label>
+                    <input type="text" th:field="*{name}" class="form-control"
+                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Location</label>
+                    <input type="text" th:field="*{location}" class="form-control"
+                           th:classappend="${#fields.hasErrors('location')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('location')}" th:errors="*{location}"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">💾 Save</button>
+                <a th:href="@{/departments/list}" class="btn btn-outline-secondary">Cancel</a>
+            </form>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

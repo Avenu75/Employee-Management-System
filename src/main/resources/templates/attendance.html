@@ -1,0 +1,98 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Attendance - Staff Portal</title>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container mt-4 mb-5">
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <h3 class="mb-3">🗓️ Attendance</h3>
+
+    <form method="get" class="row g-2 mb-4 align-items-end">
+        <div class="col-auto">
+            <label class="form-label mb-0">Date</label>
+            <input type="date" name="date" class="form-control" th:value="${selectedDate}" onchange="this.form.submit()">
+        </div>
+    </form>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3" th:each="entry : ${summary}">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+                    <div class="text-muted small" th:text="${entry.key}"></div>
+                    <div class="fs-3 fw-bold" th:text="${entry.value}"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">Record Attendance</div>
+                <div class="card-body">
+                    <form th:action="@{/attendance/record}" method="post">
+                        <input type="hidden" name="date" th:value="${selectedDate}">
+                        <div class="mb-3">
+                            <label class="form-label">Employee</label>
+                            <select name="employeeId" class="form-select" required>
+                                <option th:each="e : ${employees}" th:value="${e.id}" th:text="${e.fullName}"></option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Status</label>
+                            <select name="status" class="form-select" required>
+                                <option value="PRESENT">Present</option>
+                                <option value="ABSENT">Absent</option>
+                                <option value="LATE">Late</option>
+                                <option value="ON_LEAVE">On Leave</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Note (optional)</label>
+                            <input type="text" name="note" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">Records for <span th:text="${selectedDate}"></span></div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr><th>Employee</th><th>Status</th><th>Note</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr th:if="${records.isEmpty()}">
+                                <td colspan="3" class="text-center text-muted py-3">No records for this date yet.</td>
+                            </tr>
+                            <tr th:each="r : ${records}">
+                                <td th:text="${r.employee.fullName}"></td>
+                                <td th:text="${r.status}"></td>
+                                <td th:text="${r.note ?: '-'}"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Staff Accounts - Staff Portal</title>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container mt-4 mb-5">
+
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">👥 Staff Accounts</h3>
+        <a th:href="@{/admin/users/new}" class="btn btn-primary btn-sm">➕ New Staff Account</a>
+    </div>
+
+    <table class="table table-bordered table-striped bg-white shadow-sm">
+        <thead class="table-dark">
+            <tr>
+                <th>Full Name</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Linked Employee</th>
+                <th>Privileges</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr th:if="${users.isEmpty()}">
+                <td colspan="7" class="text-center text-muted py-4">No staff accounts yet.</td>
+            </tr>
+            <tr th:each="u : ${users}">
+                <td th:text="${u.fullName}"></td>
+                <td th:text="${u.username}"></td>
+                <td th:text="${u.email ?: '-'}"></td>
+                <td th:text="${u.employee != null ? u.employee.fullName : '-'}"></td>
+                <td th:text="${u.grantedPermissions.size()} + ' granted'"></td>
+                <td>
+                    <span th:if="${u.enabled}" class="badge bg-success">Enabled</span>
+                    <span th:unless="${u.enabled}" class="badge bg-secondary">Disabled</span>
+                </td>
+                <td>
+                    <a th:href="@{/admin/privileges}" class="btn btn-info btn-sm">Privileges</a>
+                    <form th:action="@{/admin/users/toggle-enabled}" method="post" class="d-inline">
+                        <input type="hidden" name="userId" th:value="${u.id}">
+                        <input type="hidden" name="enabled" th:value="${!u.enabled}">
+                        <button type="submit" class="btn btn-sm" th:classappend="${u.enabled} ? 'btn-outline-danger' : 'btn-outline-success'"
+                                th:text="${u.enabled} ? 'Disable' : 'Enable'"></button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

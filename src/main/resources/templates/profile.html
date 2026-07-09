@@ -1,0 +1,73 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>My Profile - Staff Portal</title>
+</head>
+<body class="bg-light">
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container mt-4 mb-5">
+    <h3 class="mb-4">👤 My Profile</h3>
+
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">Account</div>
+                <div class="card-body">
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Username</dt>
+                        <dd class="col-sm-8" th:text="${user != null ? user.username : '-'}"></dd>
+
+                        <dt class="col-sm-4">Full Name</dt>
+                        <dd class="col-sm-8" th:text="${user != null ? user.fullName : '-'}"></dd>
+
+                        <dt class="col-sm-4">Email</dt>
+                        <dd class="col-sm-8" th:text="${user != null and user.email != null ? user.email : '-'}"></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header">Employee Record</div>
+                <div class="card-body">
+                    <div th:if="${employee == null}" class="text-muted">
+                        No HR record is linked to your account yet. Contact your administrator
+                        if you believe this is incorrect.
+                    </div>
+                    <dl class="row mb-0" th:if="${employee != null}">
+                        <dt class="col-sm-4">Job Title</dt>
+                        <dd class="col-sm-8" th:text="${employee.jobTitle}"></dd>
+
+                        <dt class="col-sm-4">Department</dt>
+                        <dd class="col-sm-8" th:text="${employee.department != null ? employee.department.name : '-'}"></dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            <span th:if="${employee.status.name() == 'ACTIVE'}" class="badge bg-success">Active</span>
+                            <span th:if="${employee.status.name() == 'INACTIVE'}" class="badge bg-secondary">Inactive</span>
+                        </dd>
+
+                        <dt class="col-sm-4">Hire Date</dt>
+                        <dd class="col-sm-8" th:text="${employee.hireDate}"></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info mt-4">
+        You currently have no management privileges granted. If you need access to
+        Employees, Departments, Reports, or Attendance, please ask your administrator
+        to grant you the appropriate privilege.
+    </div>
+</div>
+
+</body>
+</html>
