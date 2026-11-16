@@ -238,10 +238,21 @@ java -jar target/thymeleafdemo-0.0.1-SNAPSHOT.jar
 | **Employee List (limited actions)** ![emplist](screenshots/08-employee-list-limited-actions.png) | **Reports (permission-gated)** ![reports](screenshots/09-reports.png) |
 | **Plain Employee Self-Service Profile** ![profile](screenshots/10-employee-self-service-profile.png) | **Access Denied Page** ![denied](screenshots/11-access-denied.png) |
 
-## 11. Future Improvements
+## 11. Future Improvements and Production Hardening
 
+### Recently added
+- Self-service password change flow for logged-in users
+- Admin password reset flow for staff accounts
+- Security audit log page for admin review of password/account/permission actions
+- Docker support for container-based startup
+
+### Planned next steps
 - Real REST-style `PUT`/`DELETE` requests instead of `GET` links for delete actions
-- Self-service "forgot password" flow for staff accounts
-- Docker Compose for one-command startup (app + MySQL)
 - Integration tests with Testcontainers
-- Audit log UI showing the full grant/revoke history (data already captured in `user_permission`)
+- More advanced rate limiting and failed-login lockout protection
+- Full deployment automation with Docker Compose or Kubernetes
+- Expanded audit reporting and export features
+
+> Note: The project is best understood as a Waterfall-style implementation with a clear upfront design, not an Agile sprint-based project. The roadmap above is simply a list of planned enhancements, not evidence of an Agile lifecycle.
+#   v i t a l o p s - h r  
+ 
