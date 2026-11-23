@@ -1,10 +1,134 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Messages - VitalOps HR')}">
+    <meta charset="utf-8">
+    <title>Messages - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Direct Communications</p>
+            <h1 class="page-title">Messages</h1>
+            <p class="page-sub">Confidential peer-to-peer discussions. Only you and the recipient can read conversation threads.</p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <section class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h2>Conversations</h2>
+                </div>
+                <div class="card-body p-0">
+                    <p class="dx-empty text-center py-5" th:if="${#lists.isEmpty(conversations)}">No conversations yet. Start a new thread using the panel on the right.</p>
+                    <ul class="msg-list" th:if="${!#lists.isEmpty(conversations)}">
+                        <li th:each="c : ${conversations}">
+                            <a th:href="@{/messages/with/{id}(id=${c.other.id})}">
+                                <span class="msg-avatar" th:text="${#strings.substring(c.other.fullName, 0, 1)}">A</span>
+                                <span class="msg-main">
+                                    <strong th:text="${c.other.fullName}">Name</strong>
+                                    <span th:text="${(c.lastFromOther ? '' : 'You: ') + c.last.body}">Last message</span>
+                                </span>
+                                <span class="ann-meta" th:text="${#temporals.format(c.last.createdAt, 'd MMM HH:mm')}">time</span>
+                                <span class="nav-count" th:if="${c.unread > 0}" th:text="${c.unread}">1</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+        <div class="col-lg-5">
+            <section class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <h2>New Message</h2>
+                </div>
+                <div class="card-body">
+                    <p class="dx-empty text-center py-3" th:if="${#lists.isEmpty(recipients)}">There is nobody available to message at this time.</p>
+                    <form th:if="${!#lists.isEmpty(recipients)}" th:action="@{/messages/new}" method="post">
+                        <div class="mb-3">
+                            <label class="form-label" for="msgTo">Recipient</label>
+                            <select id="msgTo" name="recipientId" class="form-select" required>
+                                <option value="">Choose a team member...</option>
+                                <option th:each="u : ${recipients}" th:value="${u.id}" th:text="${u.fullName}">Name</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="msgBody">Message Content</label>
+                            <textarea id="msgBody" name="body" rows="4" maxlength="2000" class="form-control" placeholder="Write your private message here..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Send Direct Message</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Super Admin: one message to several people -->
+            <section class="card shadow-sm" th:if="${canBroadcast and !#lists.isEmpty(recipients)}">
+                <div class="card-header">
+                    <h2>Broadcast Announcement</h2>
+                </div>
+                <div class="card-body">
+                    <form th:action="@{/messages/broadcast}" method="post" id="broadcastForm">
+                        <div class="bc-tools mb-2">
+                            <input type="search" id="bcFilter" class="form-control form-control-sm" placeholder="Filter people..." aria-label="Filter people">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="bcAll">All</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="bcNone">Clear</button>
+                        </div>
+                        <div class="bc-list" id="bcList">
+                            <label class="bc-item" th:each="u : ${recipients}" th:attr="data-name=${#strings.toLowerCase(u.fullName)}">
+                                <input type="checkbox" name="recipientIds" th:value="${u.id}">
+                                <span th:text="${u.fullName}">Name</span>
+                            </label>
+                        </div>
+                        <p class="text-muted small mb-2"><span id="bcCount">0</span> recipient(s) selected</p>
+                        <div class="mb-3">
+                            <label class="form-label" for="bcBody">Broadcast Message</label>
+                            <textarea id="bcBody" name="body" rows="4" maxlength="2000" class="form-control" placeholder="Direct dispatch to selected recipients..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100" id="bcSend" disabled>Send Broadcast</button>
+                    </form>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script th:if="${canBroadcast}">
+    (function () {
+        var list = document.getElementById('bcList');
+        if (!list) { return; }
+        var boxes = list.querySelectorAll('input[type=checkbox]');
+        function visible(box) { return !box.closest('.bc-item').hidden; }
+        function refresh() {
+            var n = 0;
+            boxes.forEach(function (b) { if (b.checked) { n++; } });
+            document.getElementById('bcCount').textContent = n;
+            document.getElementById('bcSend').disabled = n === 0;
+        }
+        document.getElementById('bcFilter').addEventListener('input', function (e) {
+            var q = e.target.value.trim().toLowerCase();
+            list.querySelectorAll('.bc-item').forEach(function (item) {
+                item.hidden = q !== '' && item.getAttribute('data-name').indexOf(q) === -1;
+            });
+        });
+        document.getElementById('bcAll').addEventListener('click', function () {
+            boxes.forEach(function (b) { if (visible(b)) { b.checked = true; } });
+            refresh();
+        });
+        document.getElementById('bcNone').addEventListener('click', function () {
+            boxes.forEach(function (b) { b.checked = false; });
+            refresh();
+        });
+        list.addEventListener('change', refresh);
+        refresh();
+    })();
+</script>
 </body>
 </html>

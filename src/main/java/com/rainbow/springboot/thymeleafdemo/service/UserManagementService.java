@@ -5,6 +5,7 @@ import java.util.Set;
 
 import com.rainbow.springboot.thymeleafdemo.entity.AppUser;
 import com.rainbow.springboot.thymeleafdemo.entity.Permission;
+import com.rainbow.springboot.thymeleafdemo.security.RolePreset;
 
 /**
  * Business logic for managing login accounts (AppUser) and the individual
@@ -31,8 +32,18 @@ public interface UserManagementService {
 
     void setEnabled(int userId, boolean enabled);
 
+    void resetPassword(int userId, String newPassword, AppUser changedByUser);
+
+    void changePassword(AppUser currentUser, String currentPassword, String newPassword);
+
     /** All permissions currently granted to this user, e.g. for rendering checkboxes. */
     Set<Permission> getGrantedPermissions(AppUser user);
+
+    /** Returns true if this user currently has the named permission or is the Super Admin. */
+    boolean hasPermission(AppUser user, String permissionCode);
+
+    /** Applies a named preset to a user, replacing their current permission set with the preset. */
+    void applyRolePreset(int targetUserId, RolePreset rolePreset, AppUser changedByUser);
 
     /**
      * Grants the given permission to the given user, recording who granted

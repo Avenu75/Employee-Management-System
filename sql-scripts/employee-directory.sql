@@ -50,6 +50,10 @@ CREATE TABLE `employee` (
   `salary`        DECIMAL(10,2) DEFAULT 0.00,
   `hire_date`     DATE          DEFAULT NULL,
   `status`        VARCHAR(10)   NOT NULL DEFAULT 'ACTIVE',
+  `date_of_birth` DATE          DEFAULT NULL,
+  `national_id`   VARCHAR(50)   DEFAULT NULL,
+  `gender`        VARCHAR(20)   DEFAULT NULL,
+  `profile_image` LONGTEXT      DEFAULT NULL,
   `department_id` INT           DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_employee_email` (`email`),
@@ -60,11 +64,35 @@ CREATE TABLE `employee` (
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1;
 
 INSERT INTO `employee`
-  (`first_name`,`last_name`,`email`,`phone_number`,`job_title`,`salary`,`hire_date`,`status`,`department_id`)
+  (`first_name`,`last_name`,`email`,`phone_number`,`job_title`,`salary`,`hire_date`,`status`,`date_of_birth`,`national_id`,`gender`,`profile_image`,`department_id`)
 VALUES
-  ('Rachel','Green',    'rachel@company.com',  '024-555-0101','Sales Executive',        3200.00,'2021-03-15','ACTIVE',1),
-  ('Ross','Geller',     'ross@company.com',    '024-555-0102','IT Support Officer',     3600.00,'2020-07-01','ACTIVE',3),
-  ('Chandler','Bing',   'chandler@company.com','024-555-0103','Finance Officer',        4200.00,'2019-11-20','ACTIVE',4),
-  ('Joey','Tribbiani',  'joey@company.com',    '024-555-0104','Customer Service Rep',   2500.00,'2022-01-10','ACTIVE',5),
-  ('Monica','Geller',   'monica@company.com',  '024-555-0105','HR Manager',             4500.00,'2018-05-05','ACTIVE',2),
-  ('Phoebe','Buffay',   'phoebe@company.com',  '024-555-0106','Sales Executive',        3100.00,'2023-02-14','INACTIVE',1);
+  ('Rachel','Green',    'rachel@company.com',  '024-555-0101','Sales Executive',        3200.00,'2021-03-15','ACTIVE','1994-02-14','GH-102345678','FEMALE',NULL,1),
+  ('Ross','Geller',     'ross@company.com',    '024-555-0102','IT Support Officer',     3600.00,'2020-07-01','ACTIVE','1990-11-28','GH-202345678','MALE',NULL,3),
+  ('Chandler','Bing',   'chandler@company.com','024-555-0103','Finance Officer',        4200.00,'2019-11-20','ACTIVE','1988-05-06','GH-302345678','MALE',NULL,4),
+  ('Joey','Tribbiani',  'joey@company.com',    '024-555-0104','Customer Service Rep',   2500.00,'2022-01-10','ACTIVE','1997-08-15','GH-402345678','MALE',NULL,5),
+  ('Monica','Geller',   'monica@company.com',  '024-555-0105','HR Manager',             4500.00,'2018-05-05','ACTIVE','1989-04-18','GH-502345678','FEMALE',NULL,2),
+  ('Phoebe','Buffay',   'phoebe@company.com',  '024-555-0106','Sales Executive',        3100.00,'2023-02-14','INACTIVE','1993-12-03','GH-602345678','FEMALE',NULL,1);
+
+-- ---------------------------------------------------------------------
+-- Table: other_worker
+-- Separate from employee records: cleaners, drivers, security guards,
+-- operational team members and support staff.
+-- ---------------------------------------------------------------------
+CREATE TABLE `other_worker` (
+  `id`            INT NOT NULL AUTO_INCREMENT,
+  `full_name`     VARCHAR(120) NOT NULL,
+  `email`         VARCHAR(120) DEFAULT NULL,
+  `phone_number`  VARCHAR(30) DEFAULT NULL,
+  `national_id`   VARCHAR(50) DEFAULT NULL,
+  `role_type`     VARCHAR(80) NOT NULL,
+  `date_of_birth` DATE DEFAULT NULL,
+  `gender`        VARCHAR(20) DEFAULT NULL,
+  `status`        VARCHAR(10) NOT NULL DEFAULT 'ACTIVE',
+  `profile_image` LONGTEXT DEFAULT NULL,
+  `department_id` INT DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_other_worker_department_idx` (`department_id`),
+  CONSTRAINT `fk_other_worker_department`
+    FOREIGN KEY (`department_id`) REFERENCES `department` (`id`)
+    ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;

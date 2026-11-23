@@ -1,10 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Link Account to Employee - VitalOps HR')}"></head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Access Management</p>
+            <h1 class="page-title">Link Employee Record</h1>
+            <p class="page-sub">Connect a staff login account to an employee profile for attendance and leave tracking.</p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/admin/users}" class="btn btn-outline-secondary btn-sm">Back to Accounts</a>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="form-card mx-auto" style="max-width: 680px;">
+        <div th:replace="~{admin/account-tabs :: tabs('link')}"></div>
+
+        <div class="alert alert-info py-2 px-3 mb-4" style="font-size: 13.5px;">
+            An account can only clock in and out when it is linked to an employee record. Use this for the Super Admin or any account created without one.
+        </div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger mb-4" th:text="${errorMessage}"></div>
+
+        <div th:if="${#lists.isEmpty(accounts)}" class="py-4 text-center text-muted">
+            <p class="mb-2">Every staff account is already linked to an employee record.</p>
+            <a th:href="@{/admin/users}" class="btn btn-outline-secondary btn-sm">Return to Accounts</a>
+        </div>
+
+        <form th:if="${!#lists.isEmpty(accounts)}" th:action="@{/admin/users/link}" method="POST">
+            <div class="mb-3">
+                <label class="form-label">User Account <span class="text-danger">*</span></label>
+                <select name="userId" class="form-select" required>
+                    <option value="">Choose an account...</option>
+                    <option th:each="a : ${accounts}" th:value="${a.id}" th:text="${a.fullName + ' (' + a.username + ')'}"></option>
+                </select>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Employee Record <span class="text-danger">*</span></label>
+                <select name="employeeId" class="form-select" required>
+                    <option value="">Choose the employee...</option>
+                    <option th:each="e : ${employees}" th:value="${e.id}" th:text="${e.fullName}"></option>
+                </select>
+                <div class="form-text">Add the person under Employees first if they are not listed here.</div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 pt-2 border-top">
+                <button type="submit" class="btn btn-primary">Link Account</button>
+                <a th:href="@{/admin/users}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</main>
+
 </body>
 </html>

@@ -1,10 +1,119 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(${item.id == 0 ? 'Add Payroll Item - VitalOps HR' : 'Edit Payroll Item - VitalOps HR'})}">
+    <meta charset="utf-8">
+    <title>Payroll Item - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow"><a th:href="@{/payroll/settings}">&larr; Tax and Deductions</a></p>
+            <h1 class="page-title" th:text="${item.id == 0} ? 'Add payroll item' : 'Edit payroll item'">Payroll item</h1>
+            <p class="page-sub">For example: Income tax 10%, Pension 5%, Union dues (fixed), Transport allowance (fixed).</p>
+        </div>
+    </div>
+
+    <div class="card form-card shadow-sm">
+        <div class="card-body p-4 p-sm-5">
+            <form th:action="@{/payroll/settings/save}" th:object="${item}" method="post">
+                <input type="hidden" th:field="*{id}">
+
+                <div class="mb-3">
+                    <label class="form-label" for="itemName">Name (shown on the payroll)</label>
+                    <input id="itemName" type="text" th:field="*{name}" class="form-control" maxlength="60"
+                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'" required autofocus>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="itemKind">Type</label>
+                        <select id="itemKind" th:field="*{kind}" class="form-select">
+                            <option th:each="k : ${kinds}" th:value="${k}" th:text="${k.label}">Deduction</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="itemMethod">How it is calculated</label>
+                        <select id="itemMethod" th:field="*{calcMethod}" class="form-select">
+                            <option th:each="m : ${methods}" th:value="${m}" th:text="${m.label}">Percentage</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="itemValue"><span id="valueLabel">Percentage (for example 10)</span></label>
+                        <input id="itemValue" type="number" step="0.01" min="0" th:field="*{amountValue}" class="form-control"
+                               th:classappend="${#fields.hasErrors('amountValue')} ? 'is-invalid'" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('amountValue')}" th:errors="*{amountValue}"></div>
+                    </div>
+                </div>
+                <p class="text-muted small" id="basisHint"></p>
+
+                <div class="mb-3">
+                    <label class="form-label" for="itemNote">Note (optional)</label>
+                    <input id="itemNote" type="text" th:field="*{note}" class="form-control" maxlength="200"
+                           th:classappend="${#fields.hasErrors('note')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('note')}" th:errors="*{note}"></div>
+                </div>
+
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="allEmployees" th:field="*{allEmployees}">
+                    <label class="form-check-label" for="allEmployees">Apply to all employees</label>
+                </div>
+                <div class="text-danger small mb-2" th:if="${#fields.hasErrors('allEmployees')}" th:errors="*{allEmployees}"></div>
+
+                <div class="mb-3" id="employeePicker">
+                    <label class="form-label">Only these employees</label>
+                    <div class="border rounded p-2" style="max-height: 240px; overflow-y: auto;">
+                        <div class="form-check" th:each="e : ${employees}">
+                            <input class="form-check-input" type="checkbox" name="employeeIds" th:id="'emp' + ${e.id}"
+                                   th:value="${e.id}" th:checked="${selectedIds.contains(e.id)}">
+                            <label class="form-check-label" th:for="'emp' + ${e.id}" th:text="${e.fullName}">Name</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-check mb-4">
+                    <input class="form-check-input" type="checkbox" id="itemActive" th:field="*{active}">
+                    <label class="form-check-label" for="itemActive">Active (used when payroll is generated)</label>
+                </div>
+
+                <div class="d-flex align-items-center gap-2 pt-2 border-top">
+                    <button type="submit" class="btn btn-primary px-4">Save item</button>
+                    <a th:href="@{/payroll/settings}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+        var kind = document.getElementById('itemKind');
+        var method = document.getElementById('itemMethod');
+        var label = document.getElementById('valueLabel');
+        var hint = document.getElementById('basisHint');
+        var all = document.getElementById('allEmployees');
+        var picker = document.getElementById('employeePicker');
+        function refresh() {
+            var pct = method.value === 'PERCENT';
+            label.textContent = pct ? 'Percentage (for example 10)' : 'Amount per month';
+            if (pct) {
+                hint.textContent = kind.value === 'EARNING'
+                    ? 'Taken from the base pay after unpaid days, and added to pay.'
+                    : 'Taken from gross pay (base after unpaid days plus earnings).';
+            } else {
+                hint.textContent = 'A flat amount each month.';
+            }
+            picker.style.display = all.checked ? 'none' : '';
+        }
+        [kind, method, all].forEach(function (el) { el.addEventListener('change', refresh); });
+        refresh();
+    })();
+</script>
+
 </body>
 </html>

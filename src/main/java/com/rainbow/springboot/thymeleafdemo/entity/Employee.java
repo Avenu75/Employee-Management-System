@@ -2,7 +2,10 @@ package com.rainbow.springboot.thymeleafdemo.entity;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -13,6 +16,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
@@ -77,12 +81,31 @@ public class Employee {
     @Column(name = "status")
     private EmployeeStatus status = EmployeeStatus.ACTIVE;
 
+    @PastOrPresent(message = "Date of birth cannot be in the future")
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;
+
+    @Column(name = "national_id", length = 50)
+    private String nationalId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", length = 20)
+    private Gender gender;
+
+    @Column(name = "profile_image", columnDefinition = "TEXT")
+    private String profileImage;
+
     // Many employees belong to one department.
     // FetchType.LAZY = the department is only loaded from the DB when accessed,
     // which is more efficient than loading it every single time an employee is fetched.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
+
+    // CHANGED: cascade only on delete, and no orphanRemoval, so saving the
+    // form (which has no documents list) no longer touches/deletes documents.
+    @OneToMany(mappedBy = "employee", fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
+    private List<EmployeeDocument> documents = new ArrayList<>();
 
     public Employee() {
     }
@@ -165,6 +188,38 @@ public class Employee {
         this.status = status;
     }
 
+    public LocalDate getDateOfBirth() {
+        return dateOfBirth;
+    }
+
+    public void setDateOfBirth(LocalDate dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+
+    public String getNationalId() {
+        return nationalId;
+    }
+
+    public void setNationalId(String nationalId) {
+        this.nationalId = nationalId;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public void setGender(Gender gender) {
+        this.gender = gender;
+    }
+
+    public String getProfileImage() {
+        return profileImage;
+    }
+
+    public void setProfileImage(String profileImage) {
+        this.profileImage = profileImage;
+    }
+
     public Department getDepartment() {
         return department;
     }
@@ -173,9 +228,28 @@ public class Employee {
         this.department = department;
     }
 
+    public List<EmployeeDocument> getDocuments() {
+        return documents;
+    }
+
+    public void setDocuments(List<EmployeeDocument> documents) {
+        this.documents = documents;
+    }
+
     /** Convenience method used by the UI templates to show "Firstname Lastname". */
     public String getFullName() {
-        return firstName + " " + lastName;
+        String first = firstName == null ? "" : firstName.trim();
+        String last = lastName == null ? "" : lastName.trim();
+        if (first.isBlank() && last.isBlank()) {
+            return "";
+        }
+        if (first.isBlank()) {
+            return last;
+        }
+        if (last.isBlank()) {
+            return first;
+        }
+        return first + " " + last;
     }
 
     @Override

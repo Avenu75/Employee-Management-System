@@ -1,98 +1,171 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
+<head th:replace="~{fragments/head :: head(${employee.id == 0 ? 'Add Employee - VitalOps HR' : 'Edit Employee - VitalOps HR'})}">
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Save Employee</title>
+    <title>Employee Record - VitalOps HR</title>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container mt-4 mb-5">
+<div class="container page-shell mt-4 mb-5">
 
-    <div class="card shadow-sm" style="max-width: 700px; margin: 0 auto;">
-        <div class="card-body">
-            <h4 class="card-title mb-4" th:text="${employee.id == 0} ? 'Add New Employee' : 'Update Employee'"></h4>
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow"><a th:href="@{/employees/list}">&larr; Employee Directory</a></p>
+            <h1 class="page-title" th:text="${employee.id == 0} ? 'Add New Employee' : 'Edit Employee Details'">Employee Record</h1>
+            <p class="page-sub">Manage personnel profiles, compensation, department assignment, and documentation.</p>
+        </div>
+    </div>
 
-            <form th:action="@{/employees/save}" th:object="${employee}" method="POST">
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="card form-card-wide shadow-sm">
+        <div class="card-body p-4 p-sm-5">
+            <form th:action="@{/employees/save}" th:object="${employee}" method="POST" enctype="multipart/form-data">
 
                 <input type="hidden" th:field="*{id}">
 
-                <div class="mb-3">
-                    <label class="form-label">First Name</label>
-                    <input type="text" th:field="*{firstName}" class="form-control"
-                           th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="firstName">First Name</label>
+                        <input id="firstName" type="text" th:field="*{firstName}" class="form-control"
+                               th:classappend="${#fields.hasErrors('firstName')} ? 'is-invalid'" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('firstName')}" th:errors="*{firstName}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="lastName">Last Name</label>
+                        <input id="lastName" type="text" th:field="*{lastName}" class="form-control"
+                               th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid'" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Last Name</label>
-                    <input type="text" th:field="*{lastName}" class="form-control"
-                           th:classappend="${#fields.hasErrors('lastName')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('lastName')}" th:errors="*{lastName}"></div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="email">Work Email</label>
+                        <input id="email" type="email" th:field="*{email}" class="form-control"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="phoneNumber">Phone Number</label>
+                        <input id="phoneNumber" type="text" th:field="*{phoneNumber}" class="form-control"
+                               th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid'"
+                               placeholder="e.g. 024-555-0101">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
+                    </div>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input type="text" th:field="*{email}" class="form-control"
-                           th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Phone Number</label>
-                    <input type="text" th:field="*{phoneNumber}" class="form-control"
-                           th:classappend="${#fields.hasErrors('phoneNumber')} ? 'is-invalid'"
-                           placeholder="e.g. 024-555-0101">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Job Title</label>
-                    <input type="text" th:field="*{jobTitle}" class="form-control"
-                           th:classappend="${#fields.hasErrors('jobTitle')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('jobTitle')}" th:errors="*{jobTitle}"></div>
-                </div>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Salary ($)</label>
-                        <input type="number" step="0.01" th:field="*{salary}" class="form-control"
-                               th:classappend="${#fields.hasErrors('salary')} ? 'is-invalid'">
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="jobTitle">Job Title</label>
+                        <input id="jobTitle" type="text" th:field="*{jobTitle}" class="form-control"
+                               th:classappend="${#fields.hasErrors('jobTitle')} ? 'is-invalid'" required>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('jobTitle')}" th:errors="*{jobTitle}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="salary">Monthly Base Salary ($)</label>
+                        <input id="salary" type="number" step="0.01" th:field="*{salary}" class="form-control"
+                               th:classappend="${#fields.hasErrors('salary')} ? 'is-invalid'" required>
                         <div class="invalid-feedback" th:if="${#fields.hasErrors('salary')}" th:errors="*{salary}"></div>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Hire Date</label>
-                        <input type="date" th:field="*{hireDate}" class="form-control"
-                               th:classappend="${#fields.hasErrors('hireDate')} ? 'is-invalid'">
-                        <div class="invalid-feedback" th:if="${#fields.hasErrors('hireDate')}" th:errors="*{hireDate}"></div>
-                    </div>
                 </div>
 
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Department</label>
-                        <select th:field="*{department}" class="form-select">
-                            <option value="">-- None --</option>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="department">Department</label>
+                        <select id="department" th:field="*{department}" class="form-select">
+                            <option value="">-- Unassigned --</option>
                             <option th:each="dept : ${departments}"
                                     th:value="${dept.id}"
                                     th:text="${dept.name}"></option>
                         </select>
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Status</label>
-                        <select th:field="*{status}" class="form-select">
+                    <div class="col-md-6">
+                        <label class="form-label" for="status">Employment Status</label>
+                        <select id="status" th:field="*{status}" class="form-select">
                             <option th:each="s : ${T(com.rainbow.springboot.thymeleafdemo.entity.EmployeeStatus).values()}"
                                     th:value="${s}" th:text="${s}"></option>
                         </select>
                     </div>
                 </div>
 
-                <button type="submit" class="btn btn-primary">💾 Save</button>
-                <a th:href="@{/employees/list}" class="btn btn-outline-secondary">Cancel</a>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label" for="hireDate">Hire Date</label>
+                        <input id="hireDate" type="date" th:field="*{hireDate}" class="form-control"
+                               th:classappend="${#fields.hasErrors('hireDate')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('hireDate')}" th:errors="*{hireDate}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="dateOfBirth">Date of Birth</label>
+                        <input id="dateOfBirth" type="date" th:field="*{dateOfBirth}" class="form-control"
+                               th:classappend="${#fields.hasErrors('dateOfBirth')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('dateOfBirth')}" th:errors="*{dateOfBirth}"></div>
+                    </div>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label" for="nationalId">National ID</label>
+                        <input id="nationalId" type="text" th:field="*{nationalId}" class="form-control">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label" for="gender">Gender</label>
+                        <select id="gender" th:field="*{gender}" class="form-select">
+                            <option value="">-- Not specified --</option>
+                            <option th:each="g : ${T(com.rainbow.springboot.thymeleafdemo.entity.Gender).values()}"
+                                    th:value="${g}" th:text="${g}"></option>
+                        </select>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <div class="mb-4">
+                    <label class="form-label">Profile Photo</label>
+                    <div class="d-flex align-items-center gap-3 mb-3" th:if="${employee.profileImage != null and !#strings.isEmpty(employee.profileImage)}">
+                        <img th:src="${employee.profileImage}" alt="Current photo" class="avatar-lg rounded-circle">
+                        <div class="form-text">Upload a new photo below to replace the existing avatar.</div>
+                    </div>
+                    <input type="file" name="profilePhoto" accept="image/*" class="form-control">
+                </div>
+
+                <div class="mb-4" th:if="${employee.id != 0}">
+                    <label class="form-label">Attached Documents</label>
+                    <ul class="list-group mb-3" th:if="${documents != null and !documents.isEmpty()}">
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-2" th:each="d : ${documents}">
+                            <a th:href="@{/employees/documents/{id}/download(id=${d.id})}" th:text="${d.fileName}" class="text-decoration-none fw-semibold">file.pdf</a>
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    th:attr="form=${'deleteDoc' + d.id}"
+                                    onclick="return confirm('Remove this document?');">Remove</button>
+                        </li>
+                    </ul>
+                    <p class="text-muted small" th:if="${documents == null or documents.isEmpty()}">No documents uploaded yet.</p>
+                    <div class="input-group">
+                        <input type="file" name="files" multiple class="form-control" form="uploadDocs"
+                               aria-label="Choose documents to upload">
+                        <button type="submit" class="btn btn-outline-primary" form="uploadDocs">Upload</button>
+                    </div>
+                    <div class="form-text">Uploading is handled separately from saving the form. Supported: PDF, Word, Excel, images, or text up to 10 MB.</div>
+                </div>
+                <p class="text-muted small mb-4" th:if="${employee.id == 0}">Additional documents can be attached after the initial record has been saved.</p>
+
+                <div class="d-flex align-items-center gap-2 pt-2 border-top">
+                    <button type="submit" class="btn btn-primary px-4">Save Record</button>
+                    <a th:href="@{/employees/list}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
             </form>
+
+            <!-- Auxiliary forms for uploading and removing documents -->
+            <form id="uploadDocs" th:if="${employee.id != 0}" th:action="@{/employees/{id}/documents/upload(id=${employee.id})}"
+                  method="post" enctype="multipart/form-data" class="d-none"></form>
+            <div th:if="${documents != null}">
+                <form th:each="d : ${documents}"
+                      th:id="'deleteDoc' + ${d.id}"
+                      th:action="@{/employees/documents/{id}/delete(id=${d.id})}" method="post" class="d-none"></form>
+            </div>
         </div>
     </div>
 

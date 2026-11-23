@@ -17,4 +17,16 @@ public interface AttendanceService {
 
     /** status -> count, for the given date - used on the attendance page's summary cards. */
     Map<String, Long> summaryForDate(LocalDate date);
+
+    /** Today's record for an employee, or null if they have not clocked in and none was entered. */
+    Attendance findToday(int employeeId);
+
+    /** The employee's most recent records (up to 31), newest first. */
+    List<Attendance> recent(int employeeId);
+
+    /** Records the check-in time now. PRESENT, or LATE after the work start time plus grace period. */
+    Attendance clockIn(int employeeId);
+
+    /** Records the check-out time now. Requires an earlier check-in today. */
+    Attendance clockOut(int employeeId);
 }

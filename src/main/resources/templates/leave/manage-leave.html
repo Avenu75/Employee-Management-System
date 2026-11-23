@@ -1,10 +1,96 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Leave Requests - VitalOps HR')}">
+    <meta charset="utf-8">
+    <title>Leave Requests - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Time Off</p>
+            <h1 class="page-title">Leave Requests</h1>
+            <p class="page-sub">Approve or reject employee leave requests. Approved leave automatically syncs with the attendance register.</p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <section class="card shadow-sm mb-4">
+        <div class="card-header">
+            <h2>Waiting for Decision <span class="dx-chip warn ms-2" th:text="${pending.size()}">0</span></h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-shell m-0 border-0 shadow-none">
+                <table class="table align-middle mb-0">
+                    <thead>
+                    <tr><th>Employee</th><th>Type</th><th>Dates</th><th class="dx-num">Days</th><th>Reason</th><th style="min-width: 280px;">Decision</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${pending.isEmpty()}">
+                        <td colspan="6" class="dx-empty text-center py-4">No pending leave requests awaiting decision.</td>
+                    </tr>
+                    <tr th:each="l : ${pending}">
+                        <td>
+                            <strong class="text-dark" th:text="${l.employee.fullName}">Name</strong><br>
+                            <small class="text-muted" th:text="${l.employee.department != null ? l.employee.department.name : 'Unassigned'}"></small>
+                        </td>
+                        <td th:text="${l.leaveType.label}">Annual leave</td>
+                        <td><span th:text="${l.startDate}"></span> &rarr; <span th:text="${l.endDate}"></span></td>
+                        <td class="dx-num fw-bold" th:text="${l.days}">1</td>
+                        <td class="text-muted small" th:text="${l.reason != null ? l.reason : '-'}">-</td>
+                        <td>
+                            <form th:action="@{/leave/{id}/decide(id=${l.id})}" method="post" class="m-0">
+                                <input type="text" name="comment" class="form-control form-control-sm mb-2"
+                                       maxlength="500" placeholder="Comment (required to reject)">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" name="decision" value="approve" class="btn btn-outline-success btn-sm">Approve</button>
+                                    <button type="submit" name="decision" value="reject" class="btn btn-outline-danger btn-sm">Reject</button>
+                                </div>
+                            </form>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="card shadow-sm">
+        <div class="card-header">
+            <h2>Recent Decisions</h2>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-shell m-0 border-0 shadow-none">
+                <table class="table align-middle mb-0">
+                    <thead>
+                    <tr><th>Employee</th><th>Type</th><th>Dates</th><th class="dx-num">Days</th><th>Result</th><th>Decided by</th><th>Comment</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${decided.isEmpty()}">
+                        <td colspan="7" class="dx-empty text-center py-4">No historical decisions recorded yet.</td>
+                    </tr>
+                    <tr th:each="l : ${decided}">
+                        <td class="fw-semibold text-dark" th:text="${l.employee.fullName}">Name</td>
+                        <td th:text="${l.leaveType.label}">Annual leave</td>
+                        <td><span th:text="${l.startDate}"></span> &rarr; <span th:text="${l.endDate}"></span></td>
+                        <td class="dx-num fw-bold" th:text="${l.days}">1</td>
+                        <td>
+                            <span class="dx-chip good" th:if="${l.status.name() == 'APPROVED'}">Approved</span>
+                            <span class="dx-chip bad" th:if="${l.status.name() == 'REJECTED'}">Rejected</span>
+                        </td>
+                        <td class="text-muted" th:text="${l.reviewedBy != null ? l.reviewedBy.fullName : '-'}">-</td>
+                        <td class="text-muted small" th:text="${l.reviewComment != null ? l.reviewComment : '-'}">-</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
 </body>
 </html>

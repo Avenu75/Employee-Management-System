@@ -1,10 +1,109 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Edit Privileges - VitalOps HR')}"></head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">
+                <a th:href="@{/admin/privileges}" class="text-decoration-none text-muted">&larr; All Privileges</a>
+            </p>
+            <h1 class="page-title">Privileges for <span th:text="${target.fullName}">Name</span></h1>
+            <p class="page-sub">
+                <span class="font-monospace text-muted" th:text="'@' + ${target.username}">@username</span> &middot; Select the permissions this user should hold, then save changes.
+            </p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/admin/privileges}" class="btn btn-outline-secondary btn-sm">Cancel</a>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <form th:action="@{/admin/privileges/save}" method="post" id="privForm">
+        <input type="hidden" name="userId" th:value="${target.id}">
+
+        <div class="pv-quick">
+            <span class="pv-quick-label">Presets:</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="fillStaff">Staff role</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="fillAdmin">Admin role</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="fillAll">Select all</button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" id="fillNone">Clear all</button>
+            <span class="pv-quick-note">Presets only check boxes. Changes take effect upon saving.</span>
+        </div>
+
+        <section class="dx-panel mb-4" th:each="g : ${groups}">
+            <div class="dx-panel-head">
+                <h2>
+                    <span th:text="${g.key}">Category</span>
+                    <span class="dx-chip mute"><span class="cat-count">0</span>/<span th:text="${g.value.size()}">0</span></span>
+                </h2>
+                <button type="button" class="btn btn-link btn-sm cat-toggle text-decoration-none">Select all in this group</button>
+            </div>
+            <div class="pv-cat">
+                <label class="pv-check" th:each="p : ${g.value}">
+                    <input type="checkbox" name="permissionIds" th:value="${p.id}"
+                           th:attr="data-code=${p.code}"
+                           th:checked="${grantedIds.contains(p.id)}">
+                    <span>
+                        <b th:text="${p.displayName}">Permission</b>
+                        <small th:if="${p.description != null}" th:text="${p.description}">Description</small>
+                    </span>
+                </label>
+            </div>
+        </section>
+
+        <div class="pv-bar">
+            <span class="pv-bar-count"><b id="selCount">0</b> permissions selected</span>
+            <a th:href="@{/admin/privileges}" class="btn btn-outline-secondary">Cancel</a>
+            <button type="submit" class="btn btn-primary">Save Privileges</button>
+        </div>
+    </form>
+</main>
+
+<script th:inline="javascript">
+    (function () {
+        var staff = /*[[${staffCodes}]]*/ [];
+        var admin = /*[[${adminCodes}]]*/ [];
+        var boxes = Array.prototype.slice.call(document.querySelectorAll('#privForm input[type=checkbox]'));
+
+        function refresh() {
+            document.getElementById('selCount').textContent = boxes.filter(function (b) { return b.checked; }).length;
+            document.querySelectorAll('.dx-panel').forEach(function (panel) {
+                var inGroup = panel.querySelectorAll('input[type=checkbox]');
+                var n = 0;
+                inGroup.forEach(function (b) { if (b.checked) { n++; } });
+                var c = panel.querySelector('.cat-count');
+                if (c) { c.textContent = n; }
+                var t = panel.querySelector('.cat-toggle');
+                if (t) { t.textContent = (n === inGroup.length) ? 'Clear this group' : 'Select all in this group'; }
+            });
+        }
+        function setAll(value) { boxes.forEach(function (b) { b.checked = value; }); refresh(); }
+        function setCodes(codes) {
+            boxes.forEach(function (b) { b.checked = codes.indexOf(b.getAttribute('data-code')) !== -1; });
+            refresh();
+        }
+
+        document.getElementById('fillStaff').addEventListener('click', function () { setCodes(staff); });
+        document.getElementById('fillAdmin').addEventListener('click', function () { setCodes(admin); });
+        document.getElementById('fillAll').addEventListener('click', function () { setAll(true); });
+        document.getElementById('fillNone').addEventListener('click', function () { setAll(false); });
+
+        document.querySelectorAll('.cat-toggle').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var inGroup = btn.closest('.dx-panel').querySelectorAll('input[type=checkbox]');
+                var all = Array.prototype.every.call(inGroup, function (b) { return b.checked; });
+                inGroup.forEach(function (b) { b.checked = !all; });
+                refresh();
+            });
+        });
+        boxes.forEach(function (b) { b.addEventListener('change', refresh); });
+        refresh();
+    })();
+</script>
 </body>
 </html>

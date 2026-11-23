@@ -25,6 +25,7 @@ import com.rainbow.springboot.thymeleafdemo.exception.DuplicateUsernameException
 import com.rainbow.springboot.thymeleafdemo.exception.EmployeeNotFoundException;
 import com.rainbow.springboot.thymeleafdemo.exception.PermissionNotFoundException;
 import com.rainbow.springboot.thymeleafdemo.exception.UserNotFoundException;
+import com.rainbow.springboot.thymeleafdemo.security.RolePreset;
 
 @Service
 public class UserManagementServiceImpl implements UserManagementService {
@@ -37,19 +38,22 @@ public class UserManagementServiceImpl implements UserManagementService {
     private final EmployeeRepository employeeRepository;
     private final PasswordEncoder passwordEncoder;
     private final SessionRegistry sessionRegistry;
+    private final AuditLogService auditLogService;
 
     public UserManagementServiceImpl(AppUserRepository theAppUserRepository,
                                       PermissionRepository thePermissionRepository,
                                       UserPermissionRepository theUserPermissionRepository,
                                       EmployeeRepository theEmployeeRepository,
                                       PasswordEncoder thePasswordEncoder,
-                                      SessionRegistry theSessionRegistry) {
+                                      SessionRegistry theSessionRegistry,
+                                      AuditLogService theAuditLogService) {
         appUserRepository = theAppUserRepository;
         permissionRepository = thePermissionRepository;
         userPermissionRepository = theUserPermissionRepository;
         employeeRepository = theEmployeeRepository;
         passwordEncoder = thePasswordEncoder;
         sessionRegistry = theSessionRegistry;
+        auditLogService = theAuditLogService;
     }
 
     /**
@@ -114,6 +118,9 @@ public class UserManagementServiceImpl implements UserManagementService {
         }
 
         AppUser saved = appUserRepository.save(user);
+        if (auditLogService != null) {
+            auditLogService.record("USER_CREATED", null, saved, "Staff account created.");
+        }
         log.info("Created staff login account: {}", saved.getUsername());
         return saved;
     }
@@ -129,7 +136,55 @@ public class UserManagementServiceImpl implements UserManagementService {
         user.setEnabled(enabled);
         appUserRepository.save(user);
         forceReauthentication(user.getUsername());
+        if (auditLogService != null) {
+            auditLogService.record(enabled ? "ACCOUNT_ENABLED" : "ACCOUNT_DISABLED",
+                    null, user, "Account status changed to " + (enabled ? "enabled" : "disabled"));
+        }
         log.info("User {} enabled={}", user.getUsername(), enabled);
+    }
+
+    @Override
+    public void resetPassword(int userId, String newPassword, AppUser changedByUser) {
+        AppUser user = findById(userId);
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be blank.");
+        }
+        if (newPassword.length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters long.");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        appUserRepository.save(user);
+        forceReauthentication(user.getUsername());
+        if (auditLogService != null) {
+            auditLogService.record("PASSWORD_RESET", changedByUser, user,
+                    "Password reset by " + (changedByUser != null ? changedByUser.getUsername() : "system"));
+        }
+        log.info("Password reset for user {} by {}", user.getUsername(),
+                changedByUser != null ? changedByUser.getUsername() : "system");
+    }
+
+    @Override
+    public void changePassword(AppUser currentUser, String currentPassword, String newPassword) {
+        if (currentUser == null) {
+            throw new IllegalArgumentException("No user is currently signed in.");
+        }
+        if (!passwordEncoder.matches(currentPassword, currentUser.getPassword())) {
+            throw new IllegalArgumentException("Current password is incorrect.");
+        }
+        if (newPassword == null || newPassword.trim().isEmpty()) {
+            throw new IllegalArgumentException("Password cannot be blank.");
+        }
+        if (newPassword.length() < 6) {
+            throw new IllegalArgumentException("Password must be at least 6 characters long.");
+        }
+        currentUser.setPassword(passwordEncoder.encode(newPassword));
+        appUserRepository.save(currentUser);
+        forceReauthentication(currentUser.getUsername());
+        if (auditLogService != null) {
+            auditLogService.record("PASSWORD_CHANGED", currentUser, currentUser,
+                    "User changed their own password.");
+        }
+        log.info("Password changed for user {}", currentUser.getUsername());
     }
 
     @Override
@@ -137,6 +192,53 @@ public class UserManagementServiceImpl implements UserManagementService {
         return userPermissionRepository.findByUser(user).stream()
                 .map(UserPermission::getPermission)
                 .collect(Collectors.toSet());
+    }
+
+    @Override
+    public boolean hasPermission(AppUser user, String permissionCode) {
+        if (user == null || permissionCode == null || permissionCode.isBlank()) {
+            return false;
+        }
+        if (user.isSuperAdmin()) {
+            return true;
+        }
+        return userPermissionRepository.findByUser(user).stream()
+                .map(UserPermission::getPermission)
+                .anyMatch(permission -> permissionCode.equals(permission.getCode()));
+    }
+
+    @Override
+    @Transactional
+    public void applyRolePreset(int targetUserId, RolePreset rolePreset, AppUser changedByUser) {
+        if (rolePreset == null) {
+            throw new IllegalArgumentException("A role preset is required.");
+        }
+
+        AppUser targetUser = findById(targetUserId);
+        if (targetUser.isSuperAdmin()) {
+            throw new IllegalArgumentException("The super admin account cannot be assigned a standard role preset.");
+        }
+
+        List<UserPermission> currentPermissions = userPermissionRepository.findByUser(targetUser);
+        if (!currentPermissions.isEmpty()) {
+            userPermissionRepository.deleteAll(currentPermissions);
+        }
+
+        for (String permissionCode : rolePreset.getPermissions()) {
+            Permission permission = permissionRepository.findByCode(permissionCode)
+                    .orElseThrow(() -> new PermissionNotFoundException("Did not find permission code - " + permissionCode));
+            userPermissionRepository.save(new UserPermission(targetUser, permission, changedByUser));
+        }
+
+        forceReauthentication(targetUser.getUsername());
+        if (auditLogService != null) {
+            auditLogService.record("ROLE_PRESET_APPLIED", changedByUser, targetUser,
+                    "Applied role preset: " + rolePreset.name());
+        }
+
+        log.info("Role preset {} applied to {} by {}",
+                rolePreset.name(), targetUser.getUsername(),
+                changedByUser != null ? changedByUser.getUsername() : "system");
     }
 
     @Override
@@ -162,6 +264,10 @@ public class UserManagementServiceImpl implements UserManagementService {
         UserPermission userPermission = new UserPermission(targetUser, permission, grantedByUser);
         userPermissionRepository.save(userPermission);
         forceReauthentication(targetUser.getUsername());
+        if (auditLogService != null) {
+            auditLogService.record("PERMISSION_GRANTED", grantedByUser, targetUser,
+                    "Granted permission: " + permission.getCode());
+        }
 
         log.info("Permission {} granted to {} by {}", permission.getCode(), targetUser.getUsername(),
                 grantedByUser != null ? grantedByUser.getUsername() : "unknown");
@@ -177,6 +283,10 @@ public class UserManagementServiceImpl implements UserManagementService {
 
         userPermissionRepository.deleteByUserAndPermission(targetUser, permission);
         forceReauthentication(targetUser.getUsername());
+        if (auditLogService != null) {
+            auditLogService.record("PERMISSION_REVOKED", null, targetUser,
+                    "Revoked permission: " + permission.getCode());
+        }
 
         log.info("Permission {} revoked from {}", permission.getCode(), targetUser.getUsername());
     }

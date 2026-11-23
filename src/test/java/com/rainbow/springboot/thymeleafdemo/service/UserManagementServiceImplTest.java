@@ -45,6 +45,8 @@ class UserManagementServiceImplTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private SessionRegistry sessionRegistry;
+    @Mock
+    private AuditLogService auditLogService;
 
     @InjectMocks
     private UserManagementServiceImpl userManagementService;

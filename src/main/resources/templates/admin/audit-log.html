@@ -1,0 +1,72 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Security Audit Log - VitalOps HR')}"></head>
+<body>
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Security Controls</p>
+            <h1 class="page-title">Security Audit Log</h1>
+            <p class="page-sub">Tamper-evident record of administrative and authentication operations.</p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/admin/users}" class="btn btn-outline-secondary btn-sm" sec:authorize="hasAuthority('SUPER_ADMIN')">Back to Users</a>
+            <form th:action="@{/admin/audit-log/clear}" method="post" th:if="${entries != null and !entries.isEmpty()}" sec:authorize="hasAuthority('SUPER_ADMIN')" class="d-inline">
+                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to clear the entire audit log?');">Clear Log</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="table-shell">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Action</th>
+                    <th>Actor</th>
+                    <th>Target</th>
+                    <th>Details</th>
+                    <th sec:authorize="hasAuthority('SUPER_ADMIN')" class="text-end">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${entries == null or entries.isEmpty()}">
+                    <td colspan="6" class="text-center text-muted py-5">No audit log entries recorded yet.</td>
+                </tr>
+                <tr th:each="entry : ${entries}">
+                    <td class="dx-time" th:text="${#temporals.format(entry.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2026-01-01 12:00:00</td>
+                    <td>
+                        <span class="dx-chip"
+                              th:classappend="${#strings.contains(entry.action, 'FAIL') or #strings.contains(entry.action, 'DELET') or #strings.contains(entry.action, 'CLEAR') or #strings.contains(entry.action, 'REVOKE') or #strings.contains(entry.action, 'DISABLE')} ? 'warn' : (${#strings.contains(entry.action, 'GRANT') or #strings.contains(entry.action, 'SUCCESS') or #strings.contains(entry.action, 'CREATED')} ? 'good' : '')"
+                              th:text="${#strings.replace(entry.action, '_', ' ')}">ACTION</span>
+                    </td>
+                    <td>
+                        <span class="fw-semibold text-dark" th:text="${entry.actorUsername ?: '-'}">-</span>
+                    </td>
+                    <td>
+                        <span th:if="${entry.targetUsername != null}" class="badge bg-light text-dark border" th:text="${entry.targetUsername}">-</span>
+                        <span th:unless="${entry.targetUsername != null}" class="text-muted">-</span>
+                    </td>
+                    <td>
+                        <span class="text-muted" th:text="${entry.details ?: '-'}">-</span>
+                    </td>
+                    <td sec:authorize="hasAuthority('SUPER_ADMIN')" class="text-end">
+                        <form th:action="@{/admin/audit-log/delete/{id}(id=${entry.id})}" method="post" class="d-inline"
+                              onsubmit="return confirm('Delete this audit log entry?');">
+                            <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+</body>
+</html>

@@ -1,83 +1,104 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
+<head th:replace="~{fragments/head :: head('Departments - VitalOps HR')}">
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Departments - Staff Portal</title>
+    <title>Departments - VitalOps HR</title>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container mt-4 mb-5">
+<div class="container page-shell mt-4 mb-5">
 
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${successMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Organization</p>
+            <h1 class="page-title">Departments</h1>
+            <p class="page-sub">Review and manage operating departments, team assignments, and facilities.</p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/departments/showFormForAdd}" class="btn btn-primary"
+               sec:authorize="hasAnyAuthority('CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')">
+                <svg class="ico" aria-hidden="true"><use href="#i-building"/></svg>Add Department
+            </a>
+        </div>
     </div>
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0">Departments</h3>
-        <a th:href="@{/departments/showFormForAdd}" class="btn btn-primary btn-sm"
-           sec:authorize="hasAnyAuthority('CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')">➕ Add Department</a>
-    </div>
+    <div th:replace="~{fragments/flash :: flash}"></div>
 
-    <table class="table table-bordered table-striped bg-white shadow-sm">
-        <thead class="table-dark">
+    <div class="table-shell">
+        <table class="table table-striped align-middle">
+            <thead>
             <tr>
-                <th>Name</th>
-                <th>Location</th>
-                <th># Employees</th>
-                <th>Action</th>
+                <th>Department Name</th>
+                <th>Location / Facility</th>
+                <th>Assigned Staff</th>
+                <th class="text-end">Action</th>
             </tr>
-        </thead>
-        <tbody>
-            <tr th:each="dept : ${departments}">
-                <td th:text="${dept.name}"></td>
-                <td th:text="${dept.location}"></td>
-                <td th:text="${dept.employees.size()}"></td>
-                <td>
-                    <a th:href="@{/departments/showFormForUpdate(departmentId=${dept.id})}"
-                       class="btn btn-info btn-sm" sec:authorize="hasAnyAuthority('CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')">Update</a>
-                    <button type="button" class="btn btn-danger btn-sm delete-department-btn"
-                            sec:authorize="hasAnyAuthority('CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')"
-                            th:attr="data-delete-url=@{/departments/delete(departmentId=${dept.id})},data-department-name=${dept.name}">Delete</button>
+            </thead>
+            <tbody>
+            <tr th:if="${departments.isEmpty()}">
+                <td colspan="4" class="dx-empty text-center py-5">
+                    <p class="text-muted mb-0">No departments configured yet.</p>
                 </td>
             </tr>
-        </tbody>
-    </table>
+            <tr th:each="dept : ${departments}">
+                <td class="fw-semibold text-dark" th:text="${dept.name}"></td>
+                <td>
+                    <span class="text-muted" th:text="${dept.location != null and !dept.location.isEmpty() ? dept.location : 'Main Facility'}"></span>
+                </td>
+                <td>
+                    <span class="badge bg-light" th:text="${dept.employees.size()} + ' employee(s)'">0</span>
+                </td>
+                <td class="text-end">
+                    <div class="d-inline-flex gap-1">
+                        <a th:href="@{/departments/showFormForUpdate(departmentId=${dept.id})}"
+                           class="btn btn-outline-secondary btn-sm" sec:authorize="hasAnyAuthority('CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')">
+                            Edit
+                        </a>
+                        <button type="button" class="btn btn-outline-danger btn-sm delete-department-btn"
+                                sec:authorize="hasAnyAuthority('CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')"
+                                th:attr="data-department-id=${dept.id},data-department-name=${dept.name}">
+                            Delete
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 
 </div>
 
-<!-- Clean confirmation modal for deleting a department (replaces raw browser confirm()) -->
-<div class="modal fade" id="confirmDeleteDeptModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- Accessible Delete Confirmation Modal -->
+<div class="modal fade" id="confirmDeleteDeptModal" tabindex="-1" aria-labelledby="confirmDeleteDeptModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Delete Department?</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="confirmDeleteDeptModalLabel">Delete Department?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Are you sure you want to delete <strong id="deleteDepartmentName"></strong>?
-                Employees currently in it will be unassigned, not deleted.
+                Are you sure you want to delete <strong id="deleteDepartmentName"></strong>? Employees currently assigned to this department will be unassigned, not deleted.
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="#" id="confirmDeleteDeptLink" class="btn btn-danger">Yes, Delete</a>
+                <form th:action="@{/departments/delete}" method="post" class="d-inline m-0">
+                    <input type="hidden" name="departmentId" id="deleteDepartmentId">
+                    <button type="submit" class="btn btn-danger">Yes, Delete Department</button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.querySelectorAll('.delete-department-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.getElementById('deleteDepartmentName').textContent = btn.getAttribute('data-department-name');
-            document.getElementById('confirmDeleteDeptLink').setAttribute('href', btn.getAttribute('data-delete-url'));
-            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteDeptModal'));
+            document.getElementById('deleteDepartmentId').value = btn.getAttribute('data-department-id');
+            var modal = new bootstrap.Modal(document.getElementById('confirmDeleteDeptModal'));
             modal.show();
         });
     });

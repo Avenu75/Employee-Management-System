@@ -3,64 +3,84 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Login - Staff Portal</title>
-    <style>
-        body {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            background: linear-gradient(135deg, #0d1b2a 0%, #1b2a41 100%);
-        }
-        .login-card {
-            border: none;
-            border-radius: 16px;
-        }
-    </style>
+    <title>Sign in - VitalOps HR</title>
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/enterprise.css}">
+    <link rel="stylesheet" th:href="@{/css/cinematic.css}">
 </head>
 <body>
 
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-5">
-            <div class="text-center mb-4">
-                <a th:href="@{/}" class="text-decoration-none">
-                    <span class="fs-3 fw-bold text-white">🏢 Acme Small Business</span>
-                </a>
-            </div>
+<div class="login-stage">
+    <div class="cine" aria-hidden="true">
+        <div class="cine-photo"></div>
+        <video class="cine-video" autoplay muted loop playsinline preload="auto" poster="/images/office-poster.jpg" aria-hidden="true">
+            <source th:src="@{/images/office-loop.mp4}" type="video/mp4">
+        </video>
+        <div class="cine-shade"></div>
+        <div class="cine-sweep"></div>
+        <div class="cine-bokeh"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="cine-vignette"></div>
+    </div>
 
-            <div class="card login-card shadow-lg">
-                <div class="card-body p-5">
-                    <h4 class="fw-bold mb-1">Welcome back</h4>
-                    <p class="text-muted mb-4">Sign in to access the Staff Portal.</p>
-
-                    <div th:if="${param.error}" class="alert alert-danger py-2">
-                        Invalid username or password.
-                    </div>
-                    <div th:if="${param.logout}" class="alert alert-success py-2">
-                        You have been signed out.
-                    </div>
-
-                    <form th:action="@{/login}" method="post">
-                        <div class="mb-3">
-                            <label class="form-label">Username</label>
-                            <input type="text" name="username" class="form-control form-control-lg" required autofocus>
-                        </div>
-                        <div class="mb-4">
-                            <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control form-control-lg" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary btn-lg w-100">Sign In</button>
-                    </form>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4" style="max-width: 440px;">
+                <div class="text-center mb-4">
+                    <a th:href="@{/}" class="login-brand rise" style="--d:0.1s">
+                        <span class="brand-mark">V</span>VitalOps HR
+                    </a>
                 </div>
-            </div>
 
-            <p class="text-center text-white-50 mt-4">
-                <small>Access is by invitation only. Contact your administrator if you need an account.</small>
-            </p>
+                <div class="card login-card shadow-lg rise" style="--d:0.25s">
+                    <div class="card-body p-4 p-sm-5">
+                        <h4 class="fw-bold mb-1">Welcome back</h4>
+                        <p class="text-muted mb-4" style="font-size: 13.5px;">Sign in to access the Staff Portal.</p>
+
+                        <div th:if="${param.error}" class="alert alert-danger py-2" role="alert">
+                            Invalid username or password.
+                        </div>
+                        <div th:if="${param.disabled}" class="alert alert-warning py-2" role="alert">
+                            Your account has been disabled. Please contact the administrator.
+                        </div>
+                        <div th:if="${param.locked}" class="alert alert-warning py-2" role="alert">
+                            Too many failed attempts. Please wait a few minutes and try again.
+                        </div>
+                        <div th:if="${param.logout}" class="alert alert-success py-2" role="status">
+                            You have been signed out.
+                        </div>
+
+                        <form th:action="@{/login}" method="post">
+                            <div class="mb-3">
+                                <label class="form-label" for="username">Username</label>
+                                <input type="text" id="username" name="username" class="form-control" autocomplete="username" required autofocus>
+                            </div>
+                            <div class="mb-4">
+                                <label class="form-label" for="password">Password</label>
+                                <input type="password" id="password" name="password" class="form-control" autocomplete="current-password" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-lg w-100">Sign in</button>
+                        </form>
+                    </div>
+                </div>
+
+                <p class="text-center mt-4 rise" style="--d:0.4s;">
+                    <small class="login-note">Access is by invitation only. Contact your administrator if you need an account.</small>
+                </p>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    (function () {
+        var v = document.querySelector('.cine-video');
+        if (!v) { return; }
+        v.addEventListener('canplay', function () {
+            v.classList.add('on');
+            if (v.play) { var p = v.play(); if (p && p.catch) { p.catch(function () {}); } }
+        });
+    })();
+</script>
 
 </body>
 </html>

@@ -1,0 +1,98 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(${worker.id == 0 ? 'Add Other Worker - VitalOps HR' : 'Update Other Worker - VitalOps HR'})}"></head>
+<body>
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Workforce Management</p>
+            <h1 class="page-title" th:text="${worker.id == 0} ? 'Add Other Worker' : 'Update Other Worker'">Worker Record</h1>
+            <p class="page-sub">Maintain profile and duty information for non-staff or contracted workforce members.</p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/other-workers/list}" class="btn btn-outline-secondary btn-sm">Back to List</a>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="form-card-wide mx-auto">
+        <form th:action="@{/other-workers/save}" th:object="${worker}" method="post" enctype="multipart/form-data">
+            <input type="hidden" th:field="*{id}">
+
+            <div class="row g-4">
+                <div class="col-md-4 text-center">
+                    <img th:src="${worker != null and worker.profileImage != null and !#strings.isEmpty(worker.profileImage) ? worker.profileImage : '/images/default-avatar.svg'}"
+                         class="profile-avatar border shadow-sm mb-3"
+                         alt="Worker photo">
+                    <div class="text-start">
+                        <label class="form-label">Upload Photo</label>
+                        <input type="file" name="profilePhoto" class="form-control form-control-sm" accept="image/*">
+                        <div class="form-text">JPG, PNG or GIF up to 5MB.</div>
+                    </div>
+                </div>
+
+                <div class="col-md-8">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{fullName}" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Email Address</label>
+                            <input type="email" th:field="*{email}" class="form-control" placeholder="worker@company.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Phone Number</label>
+                            <input type="text" th:field="*{phoneNumber}" class="form-control" placeholder="+1 555-0123">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Role / Duty <span class="text-danger">*</span></label>
+                            <input type="text" th:field="*{roleType}" class="form-control" placeholder="Cleaner, Driver, Security..." required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Date of Birth</label>
+                            <input type="date" th:field="*{dateOfBirth}" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">National ID / SSN</label>
+                            <input type="text" th:field="*{nationalId}" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Gender</label>
+                            <select th:field="*{gender}" class="form-select">
+                                <option value="">-- Select --</option>
+                                <option th:each="g : ${genders}" th:value="${g}" th:text="${g}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Department</label>
+                            <select th:field="*{department}" class="form-select">
+                                <option value="">-- Select --</option>
+                                <option th:each="dept : ${departments}" th:value="${dept.id}" th:text="${dept.name}"></option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Status</label>
+                            <select th:field="*{status}" class="form-select">
+                                <option th:value="${T(com.rainbow.springboot.thymeleafdemo.entity.EmployeeStatus).ACTIVE}" th:text="Active"></option>
+                                <option th:value="${T(com.rainbow.springboot.thymeleafdemo.entity.EmployeeStatus).INACTIVE}" th:text="Inactive"></option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-top d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">Save Worker</button>
+                        <a th:href="@{/other-workers/list}" class="btn btn-outline-secondary">Cancel</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</main>
+
+</body>
+</html>

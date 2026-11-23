@@ -1,10 +1,134 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('My Leave - VitalOps HR')}">
+    <meta charset="utf-8">
+    <title>My Leave - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Time Off</p>
+            <h1 class="page-title">My Leave</h1>
+            <p class="page-sub">Request time off, review balances, and monitor supervisor approval status.</p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div th:if="${!linked}" class="alert alert-warning" role="alert">
+        Your login is not linked to an employee record, so leave cannot be requested. Please ask an administrator to link your account.
+    </div>
+
+    <th:block th:if="${linked}">
+        <div class="dx-metrics mb-4">
+            <div class="dx-metric">
+                <div class="dx-metric-label"><span class="dx-dot info"></span>Allowance <span th:text="${year}"></span></div>
+                <p class="dx-metric-value" th:text="${balance.allowance}">21</p>
+                <p class="dx-metric-note">working days</p>
+            </div>
+            <div class="dx-metric">
+                <div class="dx-metric-label"><span class="dx-dot warn"></span>Taken</div>
+                <p class="dx-metric-value" th:text="${balance.used}">0</p>
+                <p class="dx-metric-note">approved days</p>
+            </div>
+            <div class="dx-metric">
+                <div class="dx-metric-label"><span class="dx-dot"></span>Awaiting Approval</div>
+                <p class="dx-metric-value" th:text="${balance.pending}">0</p>
+                <p class="dx-metric-note">pending decision</p>
+            </div>
+            <div class="dx-metric">
+                <div class="dx-metric-label"><span class="dx-dot good"></span>Remaining</div>
+                <p class="dx-metric-value" th:text="${balance.remaining}">21</p>
+                <p class="dx-metric-note">available to request</p>
+            </div>
+        </div>
+
+        <div class="dx-grid">
+            <section class="card shadow-sm">
+                <div class="card-header">
+                    <h2>My Requests</h2>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-shell m-0 border-0 shadow-none">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                            <tr><th>Type</th><th>Dates</th><th class="dx-num">Days</th><th>Status</th><th>Review</th><th class="text-end">Action</th></tr>
+                            </thead>
+                            <tbody>
+                            <tr th:if="${history.isEmpty()}">
+                                <td colspan="6" class="dx-empty text-center py-4">You have not submitted any leave requests yet.</td>
+                            </tr>
+                            <tr th:each="l : ${history}">
+                                <td class="fw-semibold text-dark" th:text="${l.leaveType.label}">Annual leave</td>
+                                <td><span th:text="${l.startDate}"></span> &rarr; <span th:text="${l.endDate}"></span></td>
+                                <td class="dx-num fw-bold" th:text="${l.days}">1</td>
+                                <td>
+                                    <span class="dx-chip warn" th:if="${l.status.name() == 'PENDING'}">Pending</span>
+                                    <span class="dx-chip good" th:if="${l.status.name() == 'APPROVED'}">Approved</span>
+                                    <span class="dx-chip bad" th:if="${l.status.name() == 'REJECTED'}">Rejected</span>
+                                    <span class="dx-chip mute" th:if="${l.status.name() == 'CANCELLED'}">Cancelled</span>
+                                </td>
+                                <td class="text-muted small" th:text="${l.reviewComment != null ? l.reviewComment : '-'}">-</td>
+                                <td class="text-end">
+                                    <form th:if="${l.status.name() == 'PENDING'}" th:action="@{/leave/{id}/cancel(id=${l.id})}" method="post" class="m-0">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">Cancel</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card shadow-sm">
+                <div class="card-header">
+                    <h2>Request Leave</h2>
+                </div>
+                <form th:action="@{/leave/request}" method="post" class="dx-form">
+                    <div>
+                        <label class="form-label" for="leaveType">Leave Type</label>
+                        <select id="leaveType" name="leaveType" class="form-select" required>
+                            <option th:each="t : ${types}" th:value="${t.name()}" th:text="${t.label}"></option>
+                        </select>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label" for="startDate">From</label>
+                            <input id="startDate" type="date" name="startDate" class="form-control" th:min="${today}" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label" for="endDate">To</label>
+                            <input id="endDate" type="date" name="endDate" class="form-control" th:min="${today}" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label" for="reason">Reason (optional)</label>
+                        <textarea id="reason" name="reason" class="form-control" rows="3" maxlength="500" placeholder="Brief note or handover context..."></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Submit Request</button>
+                </form>
+                <p class="dx-note border-top pt-3">Only working days (Monday to Friday) are counted against allowances. Sick leave may start in the past.</p>
+            </section>
+        </div>
+    </th:block>
+</div>
+
+<script>
+    (function () {
+        var start = document.getElementById('startDate');
+        var end = document.getElementById('endDate');
+        if (!start || !end) { return; }
+        start.addEventListener('change', function () {
+            end.min = start.value || end.min;
+            if (end.value && end.value < start.value) { end.value = start.value; }
+        });
+    })();
+</script>
 </body>
 </html>

@@ -3,6 +3,7 @@ package com.rainbow.springboot.thymeleafdemo.security;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.rainbow.springboot.thymeleafdemo.dao.AppUserRepository;
 import com.rainbow.springboot.thymeleafdemo.entity.AppUser;
@@ -28,13 +29,25 @@ public class CurrentUserService {
         appUserRepository = theAppUserRepository;
     }
 
+    @Transactional(readOnly = true)
     public AppUser getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             return null;
         }
+
         String username = authentication.getName();
-        return appUserRepository.findByUsername(username).orElse(null);
+        AppUser user = appUserRepository.findByUsername(username).orElse(null);
+        if (user != null && user.getEmployee() != null) {
+            user.getEmployee().getFullName();
+            if (user.getEmployee().getDepartment() != null) {
+                user.getEmployee().getDepartment().getName();
+            }
+            if (user.getEmployee().getStatus() != null) {
+                user.getEmployee().getStatus().name();
+            }
+        }
+        return user;
     }
 
     public boolean isCurrentUserSuperAdmin() {

@@ -1,95 +1,110 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
+<head th:replace="~{fragments/head :: head('Attendance Register - VitalOps HR')}">
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Attendance - Staff Portal</title>
+    <title>Attendance Register - VitalOps HR</title>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container mt-4 mb-5">
+<div class="container page-shell mt-4 mb-5">
 
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${successMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Time &amp; Attendance</p>
+            <h1 class="page-title">Attendance Register</h1>
+            <p class="page-sub">Staff record their hours under My Attendance. Use this register to review or log adjustments.</p>
+        </div>
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label class="form-label mb-0 fw-semibold text-muted small" for="regDate">Date:</label>
+            <input id="regDate" type="date" name="date" class="form-control" th:value="${selectedDate}" onchange="this.form.submit()">
+            <noscript><button type="submit" class="btn btn-outline-secondary btn-sm">Go</button></noscript>
+        </form>
     </div>
 
-    <h3 class="mb-3">🗓️ Attendance</h3>
+    <div th:replace="~{fragments/flash :: flash}"></div>
 
-    <form method="get" class="row g-2 mb-4 align-items-end">
-        <div class="col-auto">
-            <label class="form-label mb-0">Date</label>
-            <input type="date" name="date" class="form-control" th:value="${selectedDate}" onchange="this.form.submit()">
-        </div>
-    </form>
-
-    <div class="row g-3 mb-4">
-        <div class="col-md-3" th:each="entry : ${summary}">
-            <div class="card shadow-sm">
-                <div class="card-body text-center">
-                    <div class="text-muted small" th:text="${entry.key}"></div>
-                    <div class="fs-3 fw-bold" th:text="${entry.value}"></div>
-                </div>
+    <div class="dx-metrics mb-4" th:if="${summary != null}">
+        <div class="dx-metric" th:each="entry : ${summary}">
+            <div class="dx-metric-label">
+                <span class="dx-dot" th:classappend="${entry.key == 'Present' ? 'good' : (entry.key == 'Late' ? 'warn' : (entry.key == 'Absent' ? 'bad' : 'info'))}"></span>
+                <span th:text="${entry.key}">Metric</span>
             </div>
+            <p class="dx-metric-value" th:text="${entry.value}">0</p>
+            <p class="dx-metric-note">for selected date</p>
         </div>
     </div>
 
     <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">Record Attendance</div>
+        <div class="col-lg-5">
+            <section class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h2>Record Attendance</h2>
+                </div>
                 <div class="card-body">
                     <form th:action="@{/attendance/record}" method="post">
                         <input type="hidden" name="date" th:value="${selectedDate}">
                         <div class="mb-3">
-                            <label class="form-label">Employee</label>
-                            <select name="employeeId" class="form-select" required>
+                            <label class="form-label" for="employeeId">Employee</label>
+                            <select id="employeeId" name="employeeId" class="form-select" required>
+                                <option value="">Choose an employee...</option>
                                 <option th:each="e : ${employees}" th:value="${e.id}" th:text="${e.fullName}"></option>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Status</label>
-                            <select name="status" class="form-select" required>
+                            <label class="form-label" for="attStatus">Attendance Status</label>
+                            <select id="attStatus" name="status" class="form-select" required>
                                 <option value="PRESENT">Present</option>
                                 <option value="ABSENT">Absent</option>
                                 <option value="LATE">Late</option>
                                 <option value="ON_LEAVE">On Leave</option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Note (optional)</label>
-                            <input type="text" name="note" class="form-control">
+                        <div class="mb-4">
+                            <label class="form-label" for="attNote">Note (optional)</label>
+                            <input id="attNote" type="text" name="note" class="form-control" placeholder="Reason or observation">
                         </div>
-                        <button type="submit" class="btn btn-primary">Save</button>
+                        <button type="submit" class="btn btn-primary w-100">Save Attendance Entry</button>
                     </form>
                 </div>
-            </div>
+            </section>
         </div>
 
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">Records for <span th:text="${selectedDate}"></span></div>
+        <div class="col-lg-7">
+            <section class="card shadow-sm h-100">
+                <div class="card-header">
+                    <h2>Records for <span class="text-primary" th:text="${selectedDate}">Date</span></h2>
+                </div>
                 <div class="card-body p-0">
-                    <table class="table table-striped mb-0">
-                        <thead>
-                            <tr><th>Employee</th><th>Status</th><th>Note</th></tr>
-                        </thead>
-                        <tbody>
+                    <div class="table-shell m-0 border-0 shadow-none">
+                        <table class="table align-middle mb-0">
+                            <thead>
+                            <tr><th>Employee</th><th>Status</th><th>In</th><th>Out</th><th>Worked</th><th>Note</th></tr>
+                            </thead>
+                            <tbody>
                             <tr th:if="${records.isEmpty()}">
-                                <td colspan="3" class="text-center text-muted py-3">No records for this date yet.</td>
+                                <td colspan="6" class="dx-empty text-center py-4">
+                                    <p class="text-muted mb-0">No records for this date yet.</p>
+                                </td>
                             </tr>
                             <tr th:each="r : ${records}">
-                                <td th:text="${r.employee.fullName}"></td>
-                                <td th:text="${r.status}"></td>
-                                <td th:text="${r.note ?: '-'}"></td>
+                                <td class="fw-semibold text-dark" th:text="${r.employee.fullName}"></td>
+                                <td>
+                                    <span class="dx-chip"
+                                          th:classappend="${r.status.name() == 'PRESENT' ? 'good' : (r.status.name() == 'LATE' ? 'warn' : (r.status.name() == 'ABSENT' ? 'bad' : 'info'))}"
+                                          th:text="${r.status}">Present</span>
+                                </td>
+                                <td class="dx-time" th:text="${r.checkIn != null ? #temporals.format(r.checkIn, 'HH:mm') : '-'}">-</td>
+                                <td class="dx-time" th:text="${r.checkOut != null ? #temporals.format(r.checkOut, 'HH:mm') : '-'}">-</td>
+                                <td class="dx-time fw-medium" th:text="${r.workedLabel}">-</td>
+                                <td class="text-muted small" th:text="${r.note ?: '-'}">-</td>
                             </tr>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-            </div>
+            </section>
         </div>
     </div>
 </div>

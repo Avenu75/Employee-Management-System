@@ -1,0 +1,29 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:fragment="head(title)">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title th:text="${title != null and !title.isEmpty()} ? ${title} : 'VitalOps HR'">VitalOps HR</title>
+
+    <!-- Pre-paint script: apply saved theme and sidebar state before DOM paints -->
+    <script>
+        (function () {
+            try {
+                var t = localStorage.getItem('vitalops-theme');
+                if (t === 'dark' || t === 'light') { document.documentElement.setAttribute('data-theme', t); }
+            } catch (e) { }
+            try {
+                var saved = localStorage.getItem('vitalops-sidebar');
+                var narrow = window.innerWidth < 1200;
+                if (saved === 'collapsed' || (saved !== 'expanded' && narrow)) { document.documentElement.classList.add('side-collapsed'); }
+            } catch (e) { }
+        })();
+    </script>
+
+    <link rel="stylesheet" th:href="@{/css/bootstrap.min.css}">
+    <link rel="stylesheet" th:href="@{/css/enterprise.css}">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+</head>
+<body>
+</body>
+</html>

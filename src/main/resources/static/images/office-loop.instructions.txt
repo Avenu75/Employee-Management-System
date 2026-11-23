@@ -1,0 +1,10 @@
+Where to get one (check the licence yourself): Pexels Videos, Pixabay, Coverr. Search "business meeting", "office discussion", "team collaboration".
+
+Choose: 10-20 seconds, no audio needed, people clearly visible on the right side (the left is covered by the text).
+
+Compress it (needs ffmpeg), target under 8 MB:
+
+ffmpeg -i input.mp4 -an -vf "scale=1920:-2" -c:v libx264 -crf 28 -preset slow -movflags +faststart office-loop.mp4
+
+Put it in src/main/resources/static/images/ and restart the app.
+The path must stay under /images/ because that folder is public before login.

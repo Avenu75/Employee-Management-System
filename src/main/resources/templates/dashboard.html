@@ -1,108 +1,93 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
+<head th:replace="~{fragments/head :: head('Dashboard - VitalOps HR')}">
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <title>Dashboard - Staff Portal</title>
+    <title>Dashboard - VitalOps HR</title>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container mt-4 mb-5">
+<div class="container page-shell mt-4 mb-5">
 
-    <h3 class="mb-4">📊 Dashboard</h3>
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Workforce Overview</p>
+            <h1 class="page-title" th:text="'Welcome back, ' + (${currentUser != null and currentUser.fullName != null} ? ${currentUser.fullName} : 'there')">Welcome back</h1>
+            <p class="page-sub">Headcount, department distribution and quick actions for today.</p>
+        </div>
+        <div class="page-date" th:text="${#temporals.format(#temporals.createNow(), 'EEEE, d MMMM yyyy')}">Today</div>
+    </div>
 
-    <div class="row g-3 mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title">Total Employees</h6>
-                    <p class="card-text display-6" th:text="${totalEmployees}">0</p>
-                </div>
-            </div>
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="dx-metrics">
+        <div class="dx-metric">
+            <div class="dx-metric-label"><span class="dx-dot info"></span>Employees</div>
+            <p class="dx-metric-value" th:text="${totalEmployees}">0</p>
+            <p class="dx-metric-note">Total on record</p>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-success shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title">Active</h6>
-                    <p class="card-text display-6" th:text="${activeEmployees}">0</p>
-                </div>
-            </div>
+        <div class="dx-metric">
+            <div class="dx-metric-label"><span class="dx-dot good"></span>Active</div>
+            <p class="dx-metric-value" th:text="${activeEmployees}">0</p>
+            <p class="dx-metric-note"><span th:text="${activeRate}">0</span>% of total workforce</p>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-secondary shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title">Inactive</h6>
-                    <p class="card-text display-6" th:text="${inactiveEmployees}">0</p>
-                </div>
-            </div>
+        <div class="dx-metric">
+            <div class="dx-metric-label"><span class="dx-dot warn"></span>Inactive</div>
+            <p class="dx-metric-value" th:text="${inactiveEmployees}">0</p>
+            <p class="dx-metric-note">Not currently working</p>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-info shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title">Departments</h6>
-                    <p class="card-text display-6" th:text="${totalDepartments}">0</p>
-                </div>
-            </div>
+        <div class="dx-metric">
+            <div class="dx-metric-label"><span class="dx-dot"></span>Departments</div>
+            <p class="dx-metric-value" th:text="${totalDepartments}">0</p>
+            <p class="dx-metric-note">Operating units</p>
         </div>
     </div>
 
-    <div class="row g-3">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">Employees per Department</div>
-                <div class="card-body">
-                    <canvas id="deptChart" height="220"></canvas>
+    <div class="dx-grid">
+        <section class="dx-panel" aria-labelledby="deptHeading">
+            <div class="dx-panel-head">
+                <h2 id="deptHeading">Headcount by department</h2>
+                <a th:href="@{/departments/list}" sec:authorize="hasAnyAuthority('CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')">View departments &rarr;</a>
+            </div>
+            <p class="dx-empty" th:if="${departmentCounts == null or departmentCounts.isEmpty()}">No employees are assigned to a department yet.</p>
+            <div class="dx-panel-body" th:if="${departmentCounts != null and !departmentCounts.isEmpty()}">
+                <div class="dx-share" th:each="e : ${departmentCounts}">
+                    <span class="dx-share-name" th:text="${e.key}">Department</span>
+                    <div class="dx-bar" role="img" th:attr="aria-label=${e.key + ': ' + e.value}">
+                        <i th:style="'width:' + (${totalEmployees} > 0 ? (${e.value} * 100 / ${totalEmployees}) : 0) + '%'"></i>
+                    </div>
+                    <span class="dx-share-count" th:text="${e.value}">0</span>
                 </div>
             </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">Quick Actions</div>
-                <div class="card-body d-grid gap-2">
-                    <a th:href="@{/employees/showFormForAdd}" class="btn btn-primary"
-                       sec:authorize="hasAnyAuthority('CAN_ADD_EMPLOYEE','SUPER_ADMIN')">➕ Add New Employee</a>
-                    <a th:href="@{/employees/list}" class="btn btn-outline-primary"
-                       sec:authorize="hasAnyAuthority('CAN_VIEW_EMPLOYEE','SUPER_ADMIN')">👥 View All Employees</a>
-                    <a th:href="@{/departments/list}" class="btn btn-outline-secondary"
-                       sec:authorize="hasAnyAuthority('CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')">🏬 Manage Departments</a>
-                    <a th:href="@{/employees/export}" class="btn btn-outline-success"
-                       sec:authorize="hasAnyAuthority('CAN_VIEW_REPORTS','CAN_VIEW_EMPLOYEE','SUPER_ADMIN')">⬇️ Export Employees (CSV)</a>
-                    <a th:href="@{/reports}" class="btn btn-outline-info"
-                       sec:authorize="hasAnyAuthority('CAN_VIEW_REPORTS','SUPER_ADMIN')">📊 View Reports</a>
-                    <a th:href="@{/attendance}" class="btn btn-outline-dark"
-                       sec:authorize="hasAnyAuthority('CAN_MANAGE_ATTENDANCE','SUPER_ADMIN')">🗓️ Manage Attendance</a>
-                </div>
-            </div>
-        </div>
-    </div>
+        </section>
 
+        <section class="dx-panel" aria-labelledby="actionsHeading">
+            <div class="dx-panel-head"><h2 id="actionsHeading">Quick actions</h2></div>
+            <div class="dx-actions">
+                <a th:href="@{/employees/showFormForAdd}" class="dx-action primary"
+                   sec:authorize="hasAnyAuthority('CAN_ADD_EMPLOYEE','SUPER_ADMIN')">
+                    <strong>Add an employee</strong><span>Create a new personnel record</span></a>
+                <a th:href="@{/employees/list}" class="dx-action"
+                   sec:authorize="hasAnyAuthority('CAN_VIEW_EMPLOYEE','SUPER_ADMIN')">
+                    <strong>Employee directory</strong><span>Search, view and update records</span></a>
+                <a th:href="@{/departments/list}" class="dx-action"
+                   sec:authorize="hasAnyAuthority('CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')">
+                    <strong>Departments</strong><span>Review and manage teams</span></a>
+                <a th:href="@{/reports}" class="dx-action"
+                   sec:authorize="hasAnyAuthority('CAN_VIEW_REPORTS','SUPER_ADMIN')">
+                    <strong>Reports</strong><span>Workforce analytics and distribution</span></a>
+                <a th:href="@{/attendance}" class="dx-action"
+                   sec:authorize="hasAuthority('CAN_MANAGE_ATTENDANCE')">
+                    <strong>Attendance</strong><span>Record and review register</span></a>
+                <a th:href="@{/employees/export}" class="dx-action"
+                   sec:authorize="hasAnyAuthority('CAN_VIEW_REPORTS','CAN_VIEW_EMPLOYEE','SUPER_ADMIN')">
+                    <strong>Export to CSV</strong><span>Download entire employee roster</span></a>
+            </div>
+        </section>
+    </div>
 </div>
-
-<script th:inline="javascript">
-    const labels = /*[[${departmentCounts.keySet()}]]*/ [];
-    const values = /*[[${departmentCounts.values()}]]*/ [];
-
-    new Chart(document.getElementById('deptChart'), {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'Employees',
-                data: values,
-                backgroundColor: '#0d6efd'
-            }]
-        },
-        options: {
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-        }
-    });
-</script>
 
 </body>
 </html>

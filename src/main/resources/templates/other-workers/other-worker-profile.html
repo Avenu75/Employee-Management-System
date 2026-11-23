@@ -1,0 +1,78 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head(${worker != null ? worker.fullName + ' - Worker Profile' : 'Other Worker Profile - VitalOps HR'})}"></head>
+<body>
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Personnel Record</p>
+            <h1 class="page-title">Worker Profile</h1>
+            <p class="page-sub">Contractor and external staff assignment details.</p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/other-workers/list}" class="btn btn-outline-secondary btn-sm">Back to Directory</a>
+            <a th:href="@{/other-workers/showFormForUpdate(workerId=${worker.id})}"
+               sec:authorize="hasAnyAuthority('SUPER_ADMIN','CAN_EDIT_EMPLOYEE')"
+               class="btn btn-primary btn-sm">Update Profile</a>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="card mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-4">
+                <div class="col-md-3 text-center">
+                    <img th:src="${worker != null and worker.profileImage != null and !#strings.isEmpty(worker.profileImage) ? worker.profileImage : '/images/default-avatar.svg'}"
+                         class="profile-avatar border shadow-sm" alt="Worker photo">
+                </div>
+                <div class="col-md-9">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                        <div>
+                            <h3 class="h4 mb-1" th:text="${worker != null and worker.fullName != null ? worker.fullName : 'Worker'}">Worker Name</h3>
+                            <p class="text-muted mb-0" th:text="${worker != null and worker.roleType != null ? worker.roleType : 'Role not assigned'}">Role</p>
+                        </div>
+                        <div>
+                            <span th:if="${worker != null and worker.status != null and worker.status.name() == 'ACTIVE'}" class="dx-chip good">Active</span>
+                            <span th:if="${worker != null and worker.status != null and worker.status.name() == 'INACTIVE'}" class="dx-chip warn">Inactive</span>
+                            <span th:if="${worker == null or worker.status == null}" class="dx-chip mute">Unknown</span>
+                        </div>
+                    </div>
+
+                    <dl class="row mb-0 g-2">
+                        <dt class="col-sm-3 text-muted fw-normal">Full Name</dt>
+                        <dd class="col-sm-9 fw-semibold" th:text="${worker.fullName != null ? worker.fullName : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">Email</dt>
+                        <dd class="col-sm-9" th:text="${worker.email != null ? worker.email : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">Phone</dt>
+                        <dd class="col-sm-9" th:text="${worker.phoneNumber != null ? worker.phoneNumber : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">Department</dt>
+                        <dd class="col-sm-9" th:text="${worker.department != null ? worker.department.name : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">Role / Duty</dt>
+                        <dd class="col-sm-9" th:text="${worker.roleType != null ? worker.roleType : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">Gender</dt>
+                        <dd class="col-sm-9" th:text="${worker.gender != null ? worker.gender : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">Date of Birth</dt>
+                        <dd class="col-sm-9" th:text="${worker.dateOfBirth != null ? #temporals.format(worker.dateOfBirth, 'yyyy-MM-dd') : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">National ID</dt>
+                        <dd class="col-sm-9" th:text="${worker.nationalId != null ? worker.nationalId : '-'}"></dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+</body>
+</html>

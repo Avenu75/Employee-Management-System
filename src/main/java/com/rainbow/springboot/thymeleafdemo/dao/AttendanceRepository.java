@@ -18,5 +18,10 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Integer>
 
     Optional<Attendance> findByEmployeeAndAttendanceDate(Employee employee, LocalDate date);
 
+    List<Attendance> findTop31ByEmployeeOrderByAttendanceDateDesc(Employee employee);
+
+    /** Every record in the date range, used by payroll to count absences. */
+    List<Attendance> findByAttendanceDateBetween(LocalDate from, LocalDate to);
+
     long countByAttendanceDateAndStatus(LocalDate date, AttendanceStatus status);
 }

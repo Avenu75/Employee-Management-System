@@ -1,0 +1,81 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/head :: head('Other Workers - VitalOps HR')}"></head>
+<body>
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Workforce Directory</p>
+            <h1 class="page-title">Other Workers</h1>
+            <p class="page-sub">Contractors, facility specialists, drivers, security, and external support personnel.</p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/other-workers/showFormForAdd}" class="btn btn-primary btn-sm">Add Worker</a>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="table-shell">
+        <table class="table align-middle mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 56px;">Photo</th>
+                    <th>Name</th>
+                    <th>Role / Duty</th>
+                    <th>Gender</th>
+                    <th>Department</th>
+                    <th>Status</th>
+                    <th class="text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:if="${workers == null or workers.isEmpty()}">
+                    <td colspan="7" class="text-center text-muted py-5">
+                        <p class="mb-2">No other workers registered yet.</p>
+                        <a th:href="@{/other-workers/showFormForAdd}" class="btn btn-primary btn-sm">Add first worker</a>
+                    </td>
+                </tr>
+                <tr th:each="worker : ${workers}">
+                    <td>
+                        <img th:src="${worker != null and worker.profileImage != null and !#strings.isEmpty(worker.profileImage) ? worker.profileImage : '/images/default-avatar.svg'}"
+                             class="avatar avatar-sm border" alt="Worker photo">
+                    </td>
+                    <td>
+                        <a th:href="@{/other-workers/profile/{id}(id=${worker.id})}"
+                           class="fw-semibold text-dark text-decoration-none hover-primary"
+                           th:text="${worker.fullName}">Full Name</a>
+                    </td>
+                    <td>
+                        <span class="badge bg-light text-dark border" th:text="${worker.roleType}">Role</span>
+                    </td>
+                    <td th:text="${worker.gender != null ? worker.gender : '-'}">-</td>
+                    <td th:text="${worker.department != null ? worker.department.name : '-'}">-</td>
+                    <td>
+                        <span th:if="${worker.status != null and worker.status.name() == 'ACTIVE'}" class="dx-chip good">Active</span>
+                        <span th:if="${worker.status != null and worker.status.name() == 'INACTIVE'}" class="dx-chip warn">Inactive</span>
+                        <span th:if="${worker.status == null}" class="dx-chip mute">Unknown</span>
+                    </td>
+                    <td class="text-end">
+                        <div class="d-inline-flex align-items-center gap-1">
+                            <a th:href="@{/other-workers/profile/{id}(id=${worker.id})}" class="btn btn-outline-secondary btn-sm">View</a>
+                            <a th:href="@{/other-workers/showFormForUpdate(workerId=${worker.id})}" class="btn btn-outline-primary btn-sm">Edit</a>
+                            <form th:action="@{/other-workers/delete}" method="post" class="d-inline m-0"
+                                  onsubmit="return confirm('Are you sure you want to delete this worker?');">
+                                <input type="hidden" name="workerId" th:value="${worker.id}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+</body>
+</html>

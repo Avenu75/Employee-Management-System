@@ -1,73 +1,119 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>My Profile - Staff Portal</title>
-</head>
-<body class="bg-light">
+<head th:replace="~{fragments/head :: head('My Profile - VitalOps HR')}"></head>
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container mt-4 mb-5">
-    <h3 class="mb-4">👤 My Profile</h3>
-
-    <div class="row g-4">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">Account</div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-4">Username</dt>
-                        <dd class="col-sm-8" th:text="${user != null ? user.username : '-'}"></dd>
-
-                        <dt class="col-sm-4">Full Name</dt>
-                        <dd class="col-sm-8" th:text="${user != null ? user.fullName : '-'}"></dd>
-
-                        <dt class="col-sm-4">Email</dt>
-                        <dd class="col-sm-8" th:text="${user != null and user.email != null ? user.email : '-'}"></dd>
-                    </dl>
-                </div>
-            </div>
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Account Settings</p>
+            <h1 class="page-title">My Profile</h1>
+            <p class="page-sub">View and manage your personal credentials, contact details, and employment documents.</p>
         </div>
+        <div class="page-actions">
+            <a th:href="@{/profile/change-password}" class="btn btn-outline-secondary btn-sm"
+               sec:authorize="hasAnyAuthority('CAN_EDIT_OWN_PROFILE','SUPER_ADMIN')">Change Password</a>
+            <a th:href="@{/profile/edit}" class="btn btn-primary btn-sm"
+               sec:authorize="hasAnyAuthority('CAN_EDIT_OWN_PROFILE','SUPER_ADMIN')">Edit Profile</a>
+        </div>
+    </div>
 
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header">Employee Record</div>
-                <div class="card-body">
-                    <div th:if="${employee == null}" class="text-muted">
-                        No HR record is linked to your account yet. Contact your administrator
-                        if you believe this is incorrect.
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="card mb-4">
+        <div class="card-body p-4">
+            <div class="row align-items-center g-4">
+                <div class="col-md-3 text-center">
+                    <img th:src="${employee != null and employee.profileImage != null and !#strings.isEmpty(employee.profileImage) ? employee.profileImage : '/images/default-avatar.svg'}"
+                         class="profile-avatar border shadow-sm"
+                         alt="Profile photo">
+                </div>
+                <div class="col-md-9">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                        <div>
+                            <h3 class="h4 mb-1" th:text="${user != null ? user.fullName : '-'}">Full Name</h3>
+                            <p class="text-muted mb-0" th:text="${employee != null and employee.jobTitle != null ? employee.jobTitle : 'Role not assigned'}">Role</p>
+                        </div>
+                        <div>
+                            <span th:if="${employee != null and employee.status != null and employee.status.name() == 'ACTIVE'}" class="dx-chip good">Active</span>
+                            <span th:if="${employee != null and employee.status != null and employee.status.name() == 'INACTIVE'}" class="dx-chip warn">Inactive</span>
+                            <span th:if="${employee == null or employee.status == null}" class="dx-chip mute">Pending Review</span>
+                        </div>
                     </div>
-                    <dl class="row mb-0" th:if="${employee != null}">
-                        <dt class="col-sm-4">Job Title</dt>
-                        <dd class="col-sm-8" th:text="${employee.jobTitle}"></dd>
 
-                        <dt class="col-sm-4">Department</dt>
-                        <dd class="col-sm-8" th:text="${employee.department != null ? employee.department.name : '-'}"></dd>
+                    <dl class="row mb-0 g-2">
+                        <dt class="col-sm-3 text-muted fw-normal">Username</dt>
+                        <dd class="col-sm-9 fw-semibold font-monospace" th:text="${user != null ? user.username : '-'}"></dd>
 
-                        <dt class="col-sm-4">Status</dt>
-                        <dd class="col-sm-8">
-                            <span th:if="${employee.status.name() == 'ACTIVE'}" class="badge bg-success">Active</span>
-                            <span th:if="${employee.status.name() == 'INACTIVE'}" class="badge bg-secondary">Inactive</span>
-                        </dd>
+                        <dt class="col-sm-3 text-muted fw-normal">Email</dt>
+                        <dd class="col-sm-9" th:text="${user != null and user.email != null ? user.email : '-'}"></dd>
 
-                        <dt class="col-sm-4">Hire Date</dt>
-                        <dd class="col-sm-8" th:text="${employee.hireDate}"></dd>
+                        <dt class="col-sm-3 text-muted fw-normal">Department</dt>
+                        <dd class="col-sm-9" th:text="${employee != null and employee.department != null ? employee.department.name : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">Date of Birth</dt>
+                        <dd class="col-sm-9" th:text="${employee != null and employee.dateOfBirth != null ? #temporals.format(employee.dateOfBirth, 'yyyy-MM-dd') : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">National ID</dt>
+                        <dd class="col-sm-9" th:text="${employee != null and employee.nationalId != null ? employee.nationalId : '-'}"></dd>
+
+                        <dt class="col-sm-3 text-muted fw-normal">Gender</dt>
+                        <dd class="col-sm-9" th:text="${employee != null and employee.gender != null ? employee.gender : '-'}"></dd>
                     </dl>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="alert alert-info mt-4">
-        You currently have no management privileges granted. If you need access to
-        Employees, Departments, Reports, or Attendance, please ask your administrator
-        to grant you the appropriate privilege.
+    <div class="card mb-4" th:if="${employee != null}">
+        <div class="card-body p-4">
+            <h5 class="card-title mb-3">Employment Documents</h5>
+            <form th:action="@{/profile/documents/upload}" method="post" enctype="multipart/form-data"
+                  class="input-group mb-4" sec:authorize="hasAnyAuthority('CAN_EDIT_OWN_PROFILE','SUPER_ADMIN')">
+                <input type="file" name="files" multiple class="form-control" aria-label="Choose documents to upload" required>
+                <button type="submit" class="btn btn-outline-primary">Upload Documents</button>
+            </form>
+
+            <div th:if="${documents == null or documents.isEmpty()}" class="py-4 text-center text-muted">
+                <p class="mb-0">No documents have been uploaded yet.</p>
+            </div>
+
+            <div class="table-shell" th:if="${documents != null and !documents.isEmpty()}">
+                <table class="table align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>File</th>
+                            <th>Type</th>
+                            <th>Size</th>
+                            <th>Uploaded</th>
+                            <th class="text-end">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="d : ${documents}">
+                            <td class="fw-semibold text-dark" th:text="${d.fileName}">file.pdf</td>
+                            <td class="text-muted" th:text="${d.contentType}">application/pdf</td>
+                            <td class="dx-time" th:text="${#numbers.formatDecimal(d.sizeBytes / 1024.0, 1, 1)} + ' KB'">0 KB</td>
+                            <td class="dx-time" th:text="${d.uploadedAt != null ? #temporals.format(d.uploadedAt, 'yyyy-MM-dd HH:mm') : '-'}">-</td>
+                            <td class="text-end">
+                                <a class="btn btn-outline-primary btn-sm"
+                                   th:href="@{/employees/documents/{id}/download(id=${d.id})}">Download</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-</div>
+
+    <div class="alert alert-info d-flex align-items-center gap-2 mb-0" style="font-size: 13.5px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="flex-shrink-0"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+        <span>Your account employment status and role assignment are maintained by system administrators. You can update your contact information and documents directly.</span>
+    </div>
+</main>
 
 </body>
 </html>

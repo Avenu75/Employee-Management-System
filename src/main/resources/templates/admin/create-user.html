@@ -1,66 +1,73 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Create Staff Account - Staff Portal</title>
-</head>
-<body class="bg-light">
+<head th:replace="~{fragments/head :: head('Create Staff Account - VitalOps HR')}"></head>
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container mt-4 mb-5">
-    <div class="card shadow-sm" style="max-width: 650px; margin: 0 auto;">
-        <div class="card-body">
-            <h4 class="card-title mb-4">Create Staff Account</h4>
-
-            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-
-            <form th:action="@{/admin/users/new}" th:object="${newUserForm}" method="POST">
-
-                <div class="mb-3">
-                    <label class="form-label">Username</label>
-                    <input type="text" th:field="*{username}" class="form-control"
-                           th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Temporary Password</label>
-                    <input type="text" th:field="*{password}" class="form-control"
-                           th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
-                    <div class="form-text">The new user should change this after their first login.</div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Full Name</label>
-                    <input type="text" th:field="*{fullName}" class="form-control"
-                           th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Email</label>
-                    <input type="text" th:field="*{email}" class="form-control">
-                </div>
-
-                <div class="mb-4">
-                    <label class="form-label">Link to Employee Record (optional)</label>
-                    <select th:field="*{employeeId}" class="form-select">
-                        <option value="">-- None --</option>
-                        <option th:each="e : ${employees}" th:value="${e.id}" th:text="${e.fullName}"></option>
-                    </select>
-                    <div class="form-text">Only needed if this login should be linked to an existing HR record.</div>
-                </div>
-
-                <button type="submit" class="btn btn-primary">Create Account</button>
-                <a th:href="@{/admin/users}" class="btn btn-outline-secondary">Cancel</a>
-            </form>
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Access Management</p>
+            <h1 class="page-title">Create Account</h1>
+            <p class="page-sub">Provision login credentials and link to an existing employee profile if available.</p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/admin/users}" class="btn btn-outline-secondary btn-sm">Back to Accounts</a>
         </div>
     </div>
-</div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="form-card mx-auto" style="max-width: 680px;">
+        <div th:replace="~{admin/account-tabs :: tabs('employee')}"></div>
+
+        <div th:if="${errorMessage}" class="alert alert-danger mb-4" th:text="${errorMessage}"></div>
+
+        <form th:action="@{/admin/users/new}" th:object="${newUserForm}" method="POST">
+            <div class="mb-3">
+                <label class="form-label">Username <span class="text-danger">*</span></label>
+                <input type="text" th:field="*{username}" class="form-control" autocomplete="off"
+                       th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Temporary Password <span class="text-danger">*</span></label>
+                <input type="text" th:field="*{password}" class="form-control" autocomplete="off"
+                       th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                <div class="form-text">The new user should change this password after their first login.</div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Full Name <span class="text-danger">*</span></label>
+                <input type="text" th:field="*{fullName}" class="form-control"
+                       th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
+                <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Email Address</label>
+                <input type="email" th:field="*{email}" class="form-control" placeholder="user@company.com">
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label">Link to Employee Record (optional)</label>
+                <select th:field="*{employeeId}" class="form-select">
+                    <option value="">-- None --</option>
+                    <option th:each="e : ${employees}" th:value="${e.id}" th:text="${e.fullName}"></option>
+                </select>
+                <div class="form-text">Required if this account needs to track personal clock-ins or leave requests.</div>
+            </div>
+
+            <div class="d-flex align-items-center gap-2 pt-2 border-top">
+                <button type="submit" class="btn btn-primary">Create Account</button>
+                <a th:href="@{/admin/users}" class="btn btn-outline-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</main>
 
 </body>
 </html>

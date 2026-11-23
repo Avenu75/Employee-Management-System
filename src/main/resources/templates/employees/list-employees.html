@@ -1,138 +1,193 @@
 <!DOCTYPE HTML>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-<head>
+<head th:replace="~{fragments/head :: head('Employee Directory - VitalOps HR')}">
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <title>Employees - Staff Portal</title>
+    <title>Employee Directory - VitalOps HR</title>
 </head>
-<body class="bg-light">
+<body>
 
 <div th:replace="~{fragments/nav :: navbar}"></div>
 
-<div class="container mt-4 mb-5">
+<div class="container page-shell mt-4 mb-5">
 
-    <!-- Flash success message, shown once after add / update / delete -->
-    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
-        <span th:text="${successMessage}"></span>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="mb-0">Employee Directory</h3>
-        <div>
-            <a th:href="@{/employees/showFormForAdd}" class="btn btn-primary btn-sm"
-               sec:authorize="hasAnyAuthority('CAN_ADD_EMPLOYEE','SUPER_ADMIN')">➕ Add Employee</a>
-            <a th:href="@{/employees/export}" class="btn btn-outline-success btn-sm"
-               sec:authorize="hasAnyAuthority('CAN_VIEW_REPORTS','CAN_VIEW_EMPLOYEE','SUPER_ADMIN')">⬇️ Export CSV</a>
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">People Operations</p>
+            <h1 class="page-title">Employee Directory</h1>
+            <p class="page-sub">Search, inspect and manage personnel records across all departments.</p>
+        </div>
+        <div class="page-actions">
+            <a th:href="@{/employees/showFormForAdd}" class="btn btn-primary"
+               sec:authorize="hasAnyAuthority('CAN_ADD_EMPLOYEE','SUPER_ADMIN')">
+                <svg class="ico" aria-hidden="true"><use href="#i-users"/></svg>Add Employee
+            </a>
+            <a th:href="@{/employees/export(keyword=${keyword}, departmentId=${departmentId}, status=${status}, sortBy=${sortBy}, dir=${dir})}"
+               class="btn btn-outline-secondary"
+               sec:authorize="hasAnyAuthority('CAN_VIEW_REPORTS','CAN_VIEW_EMPLOYEE','SUPER_ADMIN')">
+                Export CSV
+            </a>
+            <a th:href="@{/employees/export/pdf(keyword=${keyword}, departmentId=${departmentId}, status=${status}, sortBy=${sortBy}, dir=${dir})}"
+               class="btn btn-outline-secondary"
+               sec:authorize="hasAnyAuthority('CAN_VIEW_REPORTS','CAN_VIEW_EMPLOYEE','SUPER_ADMIN')">
+                Export PDF
+            </a>
         </div>
     </div>
 
-    <!-- Search box -->
-    <form th:action="@{/employees/list}" method="get" class="row g-2 mb-3">
-        <div class="col-auto">
-            <input type="text" name="keyword" th:value="${keyword}"
-                   class="form-control" placeholder="Search by name or email...">
-        </div>
-        <div class="col-auto">
-            <button type="submit" class="btn btn-outline-primary">🔍 Search</button>
-        </div>
-        <div class="col-auto" th:if="${keyword != null and !keyword.isEmpty()}">
-            <a th:href="@{/employees/list}" class="btn btn-outline-secondary">Clear</a>
-        </div>
-    </form>
+    <div th:replace="~{fragments/flash :: flash}"></div>
 
-    <table class="table table-bordered table-striped bg-white shadow-sm">
-        <thead class="table-dark">
+    <div class="search-panel mb-4">
+        <form th:action="@{/employees/list}" method="get" class="row g-3 align-items-end">
+            <div class="col-lg-4 col-md-12">
+                <label class="form-label" for="keyword">Search</label>
+                <input id="keyword" type="text" name="keyword" th:value="${keyword}"
+                       class="form-control" placeholder="Search by name, email or job title...">
+            </div>
+            <div class="col-lg-3 col-md-4">
+                <label class="form-label" for="departmentId">Department</label>
+                <select id="departmentId" name="departmentId" class="form-select">
+                    <option value="">All departments</option>
+                    <option th:each="d : ${departments}" th:value="${d.id}" th:text="${d.name}"
+                            th:selected="${departmentId != null and departmentId == d.id}"></option>
+                </select>
+            </div>
+            <div class="col-lg-2 col-md-4">
+                <label class="form-label" for="status">Status</label>
+                <select id="status" name="status" class="form-select">
+                    <option value="">Any status</option>
+                    <option value="ACTIVE" th:selected="${status == 'ACTIVE'}">Active</option>
+                    <option value="INACTIVE" th:selected="${status == 'INACTIVE'}">Inactive</option>
+                </select>
+            </div>
+            <div class="col-lg-1 col-md-4">
+                <label class="form-label" for="size">Per page</label>
+                <select id="size" name="size" class="form-select">
+                    <option th:each="n : ${#numbers.sequence(0, 3)}" th:with="v=${n == 0 ? 10 : (n == 1 ? 25 : (n == 2 ? 50 : 100))}"
+                            th:value="${v}" th:text="${v}" th:selected="${pageSize == v}"></option>
+                </select>
+            </div>
+            <input type="hidden" name="sortBy" th:value="${sortBy}">
+            <input type="hidden" name="dir" th:value="${dir}">
+            <div class="col-auto d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a th:href="@{/employees/list}" class="btn btn-outline-secondary"
+                   th:if="${keyword != null or departmentId != null or status != null}">Reset</a>
+            </div>
+        </form>
+        <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+            <span class="text-muted small">
+                <strong class="text-dark" th:text="${employeePage.totalElements}">0</strong> employee(s) found
+                <span th:if="${employeePage.totalPages > 1}">
+                    &middot; Page <span th:text="${currentPage + 1}">1</span> of <span th:text="${employeePage.totalPages}">1</span>
+                </span>
+            </span>
+        </div>
+    </div>
+
+    <div class="table-shell">
+        <table class="table table-striped align-middle">
+            <thead>
             <tr>
-                <th><a class="text-white text-decoration-none" th:href="@{/employees/list(sortBy='firstName', keyword=${keyword})}">First Name</a></th>
-                <th><a class="text-white text-decoration-none" th:href="@{/employees/list(sortBy='lastName', keyword=${keyword})}">Last Name</a></th>
+                <th><a th:href="@{/employees/list(sortBy='firstName', dir=${sortBy == 'firstName' and dir == 'asc' ? 'desc' : 'asc'}, keyword=${keyword}, departmentId=${departmentId}, status=${status}, size=${pageSize})}">First Name<span th:if="${sortBy == 'firstName'}" th:text="${dir == 'asc' ? ' &uarr;' : ' &darr;'}"></span></a></th>
+                <th><a th:href="@{/employees/list(sortBy='lastName', dir=${sortBy == 'lastName' and dir == 'asc' ? 'desc' : 'asc'}, keyword=${keyword}, departmentId=${departmentId}, status=${status}, size=${pageSize})}">Last Name<span th:if="${sortBy == 'lastName'}" th:text="${dir == 'asc' ? ' &uarr;' : ' &darr;'}"></span></a></th>
                 <th>Email</th>
                 <th>Job Title</th>
                 <th>Department</th>
-                <th><a class="text-white text-decoration-none" th:href="@{/employees/list(sortBy='salary', keyword=${keyword})}">Salary</a></th>
+                <th><a th:href="@{/employees/list(sortBy='salary', dir=${sortBy == 'salary' and dir == 'asc' ? 'desc' : 'asc'}, keyword=${keyword}, departmentId=${departmentId}, status=${status}, size=${pageSize})}">Salary<span th:if="${sortBy == 'salary'}" th:text="${dir == 'asc' ? ' &uarr;' : ' &darr;'}"></span></a></th>
                 <th>Status</th>
-                <th>Action</th>
+                <th class="text-end">Action</th>
             </tr>
-        </thead>
+            </thead>
 
-        <tbody>
+            <tbody>
             <tr th:if="${employees.isEmpty()}">
-                <td colspan="8" class="text-center text-muted py-4">No employees found.</td>
+                <td colspan="8" class="dx-empty text-center py-5">
+                    <p class="text-muted mb-0">No employees match the specified criteria.</p>
+                </td>
             </tr>
             <tr th:each="tempEmployee : ${employees}">
-                <td th:text="${tempEmployee.firstName}"></td>
-                <td th:text="${tempEmployee.lastName}"></td>
+                <td class="fw-semibold text-dark" th:text="${tempEmployee.firstName}"></td>
+                <td class="fw-semibold text-dark" th:text="${tempEmployee.lastName}"></td>
                 <td th:text="${tempEmployee.email}"></td>
                 <td th:text="${tempEmployee.jobTitle}"></td>
-                <td th:text="${tempEmployee.department != null ? tempEmployee.department.name : '-'}"></td>
-                <td th:text="${'$' + tempEmployee.salary}"></td>
                 <td>
-                    <span th:if="${tempEmployee.status.name() == 'ACTIVE'}" class="badge bg-success">Active</span>
-                    <span th:if="${tempEmployee.status.name() == 'INACTIVE'}" class="badge bg-secondary">Inactive</span>
+                    <span th:if="${tempEmployee.department != null}" class="badge bg-light" th:text="${tempEmployee.department.name}">-</span>
+                    <span th:if="${tempEmployee.department == null}" class="text-muted small">Unassigned</span>
                 </td>
+                <td class="dx-num" th:text="${'$' + tempEmployee.salary}"></td>
                 <td>
-                    <a th:href="@{/employees/showFormForUpdate(employeeId=${tempEmployee.id})}"
-                       class="btn btn-info btn-sm" sec:authorize="hasAnyAuthority('CAN_EDIT_EMPLOYEE','SUPER_ADMIN')">
-                        Update
-                    </a>
-                    <button type="button"
-                            class="btn btn-danger btn-sm delete-employee-btn"
-                            sec:authorize="hasAnyAuthority('CAN_DELETE_EMPLOYEE','SUPER_ADMIN')"
-                            th:attr="data-delete-url=@{/employees/delete(employeeId=${tempEmployee.id})},data-employee-name=${tempEmployee.fullName}">
-                        Delete
-                    </button>
+                    <span th:if="${tempEmployee.status != null and tempEmployee.status.name() == 'ACTIVE'}" class="badge bg-success">Active</span>
+                    <span th:if="${tempEmployee.status != null and tempEmployee.status.name() == 'INACTIVE'}" class="badge bg-secondary">Inactive</span>
+                    <span th:if="${tempEmployee.status == null}" class="badge bg-light">Unknown</span>
+                </td>
+                <td class="text-end">
+                    <div class="d-inline-flex gap-1">
+                        <a th:href="@{/employees/profile/{id}(id=${tempEmployee.id})}"
+                           class="btn btn-outline-primary btn-sm">
+                            View
+                        </a>
+                        <a th:href="@{/employees/showFormForUpdate(employeeId=${tempEmployee.id})}"
+                           class="btn btn-outline-secondary btn-sm" sec:authorize="hasAnyAuthority('CAN_EDIT_EMPLOYEE','SUPER_ADMIN')">
+                            Edit
+                        </a>
+                        <button type="button"
+                                class="btn btn-outline-danger btn-sm delete-employee-btn"
+                                sec:authorize="hasAnyAuthority('CAN_DELETE_EMPLOYEE','SUPER_ADMIN')"
+                                th:attr="data-employee-id=${tempEmployee.id},data-employee-name=${tempEmployee.fullName}">
+                            Delete
+                        </button>
+                    </div>
                 </td>
             </tr>
-        </tbody>
-    </table>
+            </tbody>
+        </table>
+    </div>
 
-    <!-- Pagination controls -->
-    <nav th:if="${employeePage.totalPages > 1}" aria-label="Employee pagination">
-        <ul class="pagination">
+    <nav th:if="${employeePage.totalPages > 1}" aria-label="Employee pagination" class="mt-4">
+        <ul class="pagination justify-content-center flex-wrap">
             <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
-                <a class="page-link" th:href="@{/employees/list(page=${currentPage - 1}, keyword=${keyword}, sortBy=${sortBy})}">Previous</a>
+                <a class="page-link" th:href="@{/employees/list(page=${currentPage - 1}, keyword=${keyword}, departmentId=${departmentId}, status=${status}, sortBy=${sortBy}, dir=${dir}, size=${pageSize})}">&larr; Previous</a>
             </li>
-            <li class="page-item" th:each="i : ${#numbers.sequence(0, employeePage.totalPages - 1)}"
+            <li class="page-item" th:each="i : ${#numbers.sequence(currentPage > 2 ? currentPage - 2 : 0, currentPage + 2 < employeePage.totalPages - 1 ? currentPage + 2 : employeePage.totalPages - 1)}"
                 th:classappend="${i == currentPage} ? 'active'">
-                <a class="page-link" th:href="@{/employees/list(page=${i}, keyword=${keyword}, sortBy=${sortBy})}" th:text="${i + 1}"></a>
+                <a class="page-link" th:href="@{/employees/list(page=${i}, keyword=${keyword}, departmentId=${departmentId}, status=${status}, sortBy=${sortBy}, dir=${dir}, size=${pageSize})}" th:text="${i + 1}"></a>
             </li>
             <li class="page-item" th:classappend="${currentPage == employeePage.totalPages - 1} ? 'disabled'">
-                <a class="page-link" th:href="@{/employees/list(page=${currentPage + 1}, keyword=${keyword}, sortBy=${sortBy})}">Next</a>
+                <a class="page-link" th:href="@{/employees/list(page=${currentPage + 1}, keyword=${keyword}, departmentId=${departmentId}, status=${status}, sortBy=${sortBy}, dir=${dir}, size=${pageSize})}">Next &rarr;</a>
             </li>
         </ul>
     </nav>
-
 </div>
 
-<!-- Clean confirmation modal for deleting an employee (replaces raw browser confirm()) -->
-<div class="modal fade" id="confirmDeleteModal" tabindex="-1">
-    <div class="modal-dialog">
+<!-- Accessible Delete Confirmation Modal -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">Delete Employee?</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Delete Employee Record?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                Are you sure you want to delete <strong id="deleteEmployeeName"></strong>?
-                This action cannot be undone.
+                Are you sure you want to delete <strong id="deleteEmployeeName"></strong>? This action will permanently remove their records, attendance history, and documents.
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                <a href="#" id="confirmDeleteLink" class="btn btn-danger">Yes, Delete</a>
+                <form th:action="@{/employees/delete}" method="post" class="d-inline m-0">
+                    <input type="hidden" name="employeeId" id="deleteEmployeeId">
+                    <button type="submit" class="btn btn-danger">Yes, Delete Record</button>
+                </form>
             </div>
         </div>
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     document.querySelectorAll('.delete-employee-btn').forEach(function (btn) {
         btn.addEventListener('click', function () {
             document.getElementById('deleteEmployeeName').textContent = btn.getAttribute('data-employee-name');
-            document.getElementById('confirmDeleteLink').setAttribute('href', btn.getAttribute('data-delete-url'));
-            const modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+            document.getElementById('deleteEmployeeId').value = btn.getAttribute('data-employee-id');
+            var modal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
             modal.show();
         });
     });

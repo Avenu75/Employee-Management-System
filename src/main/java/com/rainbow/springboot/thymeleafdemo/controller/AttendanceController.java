@@ -22,7 +22,7 @@ import com.rainbow.springboot.thymeleafdemo.service.EmployeeService;
  */
 @Controller
 @RequestMapping("/attendance")
-@PreAuthorize("hasAnyAuthority('CAN_MANAGE_ATTENDANCE','SUPER_ADMIN')")
+@PreAuthorize("hasAuthority('CAN_MANAGE_ATTENDANCE')")
 public class AttendanceController {
 
     private final AttendanceService attendanceService;

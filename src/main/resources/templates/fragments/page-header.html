@@ -1,0 +1,12 @@
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+    <div th:fragment="header(eyebrow, title, subtitle)" class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow" th:if="${eyebrow != null and !eyebrow.isEmpty()}" th:text="${eyebrow}">Overview</p>
+            <h1 class="page-title" th:text="${title}">Page Title</h1>
+            <p class="page-sub" th:if="${subtitle != null and !subtitle.isEmpty()}" th:text="${subtitle}">Page description.</p>
+        </div>
+    </div>
+</body>
+</html>

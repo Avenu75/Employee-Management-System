@@ -47,7 +47,7 @@ public class PrivilegeBasedLoginSuccessHandler extends SimpleUrlAuthenticationSu
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
-                                         Authentication authentication) throws IOException, ServletException {
+                                        Authentication authentication) throws IOException, ServletException {
 
         String targetUrl = determineTargetUrl(authentication);
         getRedirectStrategy().sendRedirect(request, response, targetUrl);
@@ -56,12 +56,16 @@ public class PrivilegeBasedLoginSuccessHandler extends SimpleUrlAuthenticationSu
     private String determineTargetUrl(Authentication authentication) {
         boolean isSuperAdmin = false;
         boolean hasManagementPermission = false;
+        boolean hasReception = false;
 
         for (GrantedAuthority authority : authentication.getAuthorities()) {
             String value = authority.getAuthority();
             if (CustomUserDetailsService.SUPER_ADMIN_AUTHORITY.equals(value)) {
                 isSuperAdmin = true;
                 break;
+            }
+            if (PermissionCode.CAN_USE_RECEPTION.equals(value)) {
+                hasReception = true;
             }
             if (MANAGEMENT_AUTHORITIES.contains(value)) {
                 hasManagementPermission = true;
@@ -73,6 +77,9 @@ public class PrivilegeBasedLoginSuccessHandler extends SimpleUrlAuthenticationSu
         }
         if (hasManagementPermission) {
             return "/dashboard";
+        }
+        if (hasReception) {
+            return "/reception";
         }
         return "/profile";
     }

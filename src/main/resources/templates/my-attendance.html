@@ -1,10 +1,101 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('My Attendance - VitalOps HR')}">
+    <meta charset="utf-8">
+    <title>My Attendance - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Time &amp; Attendance</p>
+            <h1 class="page-title">My Attendance</h1>
+            <p class="page-sub">Clock in upon starting your workday and clock out when concluding shift.</p>
+        </div>
+        <div class="page-date" th:text="${#temporals.format(#temporals.createNow(), 'EEEE, d MMMM yyyy')}">Today</div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div th:if="${!linked}" class="alert alert-warning" role="alert">
+        Your login is not currently linked to an employee personnel record, so attendance cannot be logged. Please ask a system administrator to link your account.
+    </div>
+
+    <th:block th:if="${linked}">
+        <section class="card shadow-sm mb-4">
+            <div class="card-header">
+                <h2>Today's Shift</h2>
+            </div>
+            <div class="dx-clock">
+                <div>
+                    <div class="label">Clocked In</div>
+                    <div class="time" th:text="${today != null and today.checkIn != null ? #temporals.format(today.checkIn, 'HH:mm') : '--:--'}">--:--</div>
+                </div>
+                <div>
+                    <div class="label">Clocked Out</div>
+                    <div class="time" th:text="${today != null and today.checkOut != null ? #temporals.format(today.checkOut, 'HH:mm') : '--:--'}">--:--</div>
+                </div>
+                <div th:if="${today != null}">
+                    <div class="label">Shift Status</div>
+                    <span class="dx-chip good" th:if="${today.status.name() == 'PRESENT'}">Present</span>
+                    <span class="dx-chip warn" th:if="${today.status.name() == 'LATE'}">Late</span>
+                    <span class="dx-chip bad" th:if="${today.status.name() == 'ABSENT'}">Absent</span>
+                    <span class="dx-chip info" th:if="${today.status.name() == 'ON_LEAVE'}">On leave</span>
+                </div>
+                <div class="d-flex gap-2 ms-auto">
+                    <form th:action="@{/my-attendance/clock-in}" method="post" class="m-0">
+                        <button type="submit" class="btn btn-primary btn-lg"
+                                th:disabled="${today != null and (today.checkIn != null or today.status.name() == 'ON_LEAVE')}">
+                            Clock in
+                        </button>
+                    </form>
+                    <form th:action="@{/my-attendance/clock-out}" method="post" class="m-0">
+                        <button type="submit" class="btn btn-outline-secondary btn-lg"
+                                th:disabled="${today == null or today.checkIn == null or today.checkOut != null}">
+                            Clock out
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <section class="card shadow-sm">
+            <div class="card-header">
+                <h2>Recent Attendance (Last 31 Records)</h2>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-shell m-0 border-0 shadow-none">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                        <tr><th>Date</th><th>Status</th><th>In</th><th>Out</th><th>Worked</th><th>Note</th></tr>
+                        </thead>
+                        <tbody>
+                        <tr th:if="${records.isEmpty()}">
+                            <td colspan="6" class="dx-empty text-center py-4">No records logged yet.</td>
+                        </tr>
+                        <tr th:each="r : ${records}">
+                            <td class="fw-semibold text-dark" th:text="${r.attendanceDate}">2026-01-01</td>
+                            <td>
+                                <span class="dx-chip good" th:if="${r.status.name() == 'PRESENT'}">Present</span>
+                                <span class="dx-chip warn" th:if="${r.status.name() == 'LATE'}">Late</span>
+                                <span class="dx-chip bad" th:if="${r.status.name() == 'ABSENT'}">Absent</span>
+                                <span class="dx-chip info" th:if="${r.status.name() == 'ON_LEAVE'}">On leave</span>
+                            </td>
+                            <td class="dx-time" th:text="${r.checkIn != null ? #temporals.format(r.checkIn, 'HH:mm') : '-'}">-</td>
+                            <td class="dx-time" th:text="${r.checkOut != null ? #temporals.format(r.checkOut, 'HH:mm') : '-'}">-</td>
+                            <td class="dx-time fw-medium" th:text="${r.workedLabel}">-</td>
+                            <td class="text-muted small" th:text="${r.note != null ? r.note : '-'}">-</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </th:block>
+</div>
 </body>
 </html>

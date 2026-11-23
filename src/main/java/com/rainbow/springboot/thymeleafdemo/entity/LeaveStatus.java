@@ -1,4 +1,9 @@
 package com.rainbow.springboot.thymeleafdemo.entity;
 
-public class LeaveStatus {
+/** Life cycle of a leave request. */
+public enum LeaveStatus {
+    PENDING,
+    APPROVED,
+    REJECTED,
+    CANCELLED
 }

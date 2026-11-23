@@ -1,10 +1,99 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Payroll Adjustments - VitalOps HR')}">
+    <meta charset="utf-8">
+    <title>Payroll Adjustments - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Finance Operations</p>
+            <h1 class="page-title">Monthly Adjustments</h1>
+            <p class="page-sub">One-off amounts for a single employee in a single month: salary advance, loan repayment, fine, bonus, expense refund.</p>
+        </div>
+        <form th:action="@{/payroll/adjustments}" method="get" class="d-flex align-items-center gap-2 flex-wrap">
+            <label class="form-label mb-0 fw-semibold text-muted small" for="month">Month:</label>
+            <input id="month" type="month" name="month" class="form-control" th:value="${month}" onchange="this.form.submit()">
+            <noscript><button type="submit" class="btn btn-outline-secondary btn-sm">Show</button></noscript>
+        </form>
+    </div>
+
+    <div th:replace="~{payroll/payroll-tabs :: tabs(${activeTab}, ${month})}"></div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="alert alert-warning" th:if="${locked}">
+        Payroll for this month is finalised, so its adjustments are locked.
+    </div>
+
+    <div class="card form-card shadow-sm mb-4" th:unless="${locked}">
+        <div class="card-header"><h2>Add an adjustment for <span th:text="${month}">2026-11</span></h2></div>
+        <div class="card-body">
+            <form th:action="@{/payroll/adjustments/add}" method="post" class="row g-3">
+                <input type="hidden" name="month" th:value="${month}">
+                <div class="col-md-4">
+                    <label class="form-label" for="adjEmployee">Employee</label>
+                    <select id="adjEmployee" name="employeeId" class="form-select" required>
+                        <option value="" disabled selected>Choose an employee</option>
+                        <option th:each="e : ${employees}" th:value="${e.id}" th:text="${e.fullName}">Name</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label" for="adjLabel">Name (shown on the payroll)</label>
+                    <input id="adjLabel" type="text" name="label" class="form-control" maxlength="60" placeholder="e.g. Salary advance" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="adjKind">Type</label>
+                    <select id="adjKind" name="kind" class="form-select">
+                        <option th:each="k : ${kinds}" th:value="${k}" th:text="${k.name() == 'EARNING'} ? 'Earning' : 'Deduction'">Deduction</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label" for="adjAmount">Amount</label>
+                    <input id="adjAmount" type="number" step="0.01" min="0.01" name="amount" class="form-control" required>
+                </div>
+                <div class="col-12">
+                    <label class="form-label" for="adjNote">Note (optional)</label>
+                    <input id="adjNote" type="text" name="note" class="form-control" maxlength="200">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Add adjustment</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="table-shell">
+        <table class="table table-striped align-middle">
+            <thead>
+            <tr><th>Employee</th><th>Item</th><th>Type</th><th class="dx-num">Amount</th><th>Note</th><th class="text-end">Action</th></tr>
+            </thead>
+            <tbody>
+            <tr th:if="${adjustments.isEmpty()}">
+                <td colspan="6" class="dx-empty text-center py-4 text-muted">No adjustments for this month.</td>
+            </tr>
+            <tr th:each="a : ${adjustments}">
+                <td class="fw-semibold" th:text="${a.employee.fullName}">Name</td>
+                <td th:text="${a.label}">Salary advance</td>
+                <td><span class="badge" th:classappend="${a.kind.name() == 'EARNING'} ? 'bg-success' : 'bg-secondary'" th:text="${a.kind.name() == 'EARNING'} ? 'Earning' : 'Deduction'">Deduction</span></td>
+                <td class="dx-num" th:text="${currency + #numbers.formatDecimal(a.amount, 1, 'COMMA', 2, 'POINT')}">0</td>
+                <td class="text-muted" th:text="${a.note}"></td>
+                <td class="text-end">
+                    <form th:action="@{/payroll/adjustments/delete}" method="post" class="d-inline m-0" th:unless="${locked}">
+                        <input type="hidden" name="month" th:value="${month}">
+                        <input type="hidden" name="adjustmentId" th:value="${a.id}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 </body>
 </html>

@@ -1,10 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Notifications - VitalOps HR')}"></head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<main class="page-shell">
+    <div class="page-header mb-4">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Inbox</p>
+            <h1 class="page-title">Notifications</h1>
+            <p class="page-sub">Your recent system alerts, activity updates, and messages.</p>
+        </div>
+        <div class="page-actions">
+            <form th:action="@{/notifications/read-all}" method="post" th:if="${unreadNotifications != null and unreadNotifications > 0}">
+                <button type="submit" class="btn btn-outline-secondary btn-sm">Mark all as read</button>
+            </form>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <section class="dx-panel">
+        <div th:if="${notifications == null or notifications.isEmpty()}" class="p-5 text-center text-muted">
+            <div class="avatar avatar-lg mx-auto mb-3 bg-light text-muted">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </div>
+            <p class="mb-0 fw-medium">You have no notifications.</p>
+        </div>
+        <ul class="dx-notif" th:unless="${notifications == null or notifications.isEmpty()}">
+            <li th:each="n : ${notifications}" th:classappend="${!n.seen} ? 'unread'">
+                <div>
+                    <p class="msg" th:text="${n.message}">Message</p>
+                    <p class="when" th:text="${#temporals.format(n.createdAt, 'd MMM yyyy, HH:mm')}">Now</p>
+                </div>
+                <form th:action="@{/notifications/{id}/open(id=${n.id})}" method="post" class="m-0">
+                    <button type="submit" class="btn btn-sm"
+                            th:classappend="${n.seen} ? 'btn-outline-secondary' : 'btn-primary'"
+                            th:text="${n.link != null ? 'Open' : 'Mark read'}">Open</button>
+                </form>
+            </li>
+        </ul>
+    </section>
+</main>
+
 </body>
 </html>

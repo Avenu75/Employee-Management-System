@@ -1,10 +1,49 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(${'Conversation with ' + other.fullName + ' - VitalOps HR'})}">
+    <meta charset="utf-8">
+    <title>Conversation - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5" style="max-width: 860px;">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow"><a th:href="@{/messages}">&larr; All Messages</a></p>
+            <h1 class="page-title" th:text="${other.fullName}">Team Member</h1>
+            <p class="page-sub">Confidential conversation thread.</p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <section class="card shadow-sm">
+        <div class="card-body p-0">
+            <p class="dx-empty text-center py-5" th:if="${#lists.isEmpty(messages)}">No messages in this conversation yet. Send the first message below.</p>
+            <div class="msg-thread" id="thread">
+                <div class="msg-bubble" th:each="m : ${messages}"
+                     th:classappend="${m.sender.id == currentUser.id} ? 'mine'">
+                    <span th:text="${m.body}">Hello</span>
+                    <small th:text="${#temporals.format(m.createdAt, 'd MMM, HH:mm')}">time</small>
+                </div>
+            </div>
+
+            <form th:if="${canReply}" th:action="@{/messages/with/{id}/send(id=${other.id})}" method="post" class="msg-send">
+                <textarea name="body" rows="2" class="form-control" th:maxlength="${maxLength}"
+                          placeholder="Type your message..." required></textarea>
+                <button type="submit" class="btn btn-primary px-4">Send</button>
+            </form>
+            <p class="dx-note mb-0 text-center py-3" th:if="${!canReply}">This conversation has been closed or you no longer have permission to send messages to this account.</p>
+        </div>
+    </section>
+</div>
+
+<script>
+    var t = document.getElementById('thread');
+    if (t) { t.scrollTop = t.scrollHeight; }
+</script>
 </body>
 </html>

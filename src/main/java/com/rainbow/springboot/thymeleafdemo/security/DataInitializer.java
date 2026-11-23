@@ -9,8 +9,10 @@ import org.springframework.stereotype.Component;
 
 import com.rainbow.springboot.thymeleafdemo.dao.AppUserRepository;
 import com.rainbow.springboot.thymeleafdemo.dao.PermissionRepository;
+import com.rainbow.springboot.thymeleafdemo.dao.UserPermissionRepository;
 import com.rainbow.springboot.thymeleafdemo.entity.AppUser;
 import com.rainbow.springboot.thymeleafdemo.entity.Permission;
+import com.rainbow.springboot.thymeleafdemo.entity.UserPermission;
 
 /**
  * Runs once, automatically, every time the application starts up
@@ -47,6 +49,7 @@ public class DataInitializer implements CommandLineRunner {
 
     private final PermissionRepository permissionRepository;
     private final AppUserRepository appUserRepository;
+    private final UserPermissionRepository userPermissionRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${app.super-admin.username:superadmin}")
@@ -62,10 +65,12 @@ public class DataInitializer implements CommandLineRunner {
     private String superAdminEmail;
 
     public DataInitializer(PermissionRepository thePermissionRepository,
-                            AppUserRepository theAppUserRepository,
-                            PasswordEncoder thePasswordEncoder) {
+                           AppUserRepository theAppUserRepository,
+                           UserPermissionRepository theUserPermissionRepository,
+                           PasswordEncoder thePasswordEncoder) {
         permissionRepository = thePermissionRepository;
         appUserRepository = theAppUserRepository;
+        userPermissionRepository = theUserPermissionRepository;
         passwordEncoder = thePasswordEncoder;
     }
 
@@ -113,9 +118,16 @@ public class DataInitializer implements CommandLineRunner {
 
         appUserRepository.save(superAdmin);
 
+        for (Permission permission : permissionRepository.findAll()) {
+            if (userPermissionRepository.findByUserAndPermission(superAdmin, permission).isEmpty()) {
+                userPermissionRepository.save(new UserPermission(superAdmin, permission, superAdmin));
+            }
+        }
+
         log.warn("=================================================================");
         log.warn(" Seeded the ONE super admin account for this system.");
         log.warn(" Username: {}", superAdminUsername);
+        log.warn(" This account has the complete role preset and all permissions");
         log.warn(" Please log in and change the password immediately if this is");
         log.warn(" the default value (set via app.super-admin.password).");
         log.warn("=================================================================");
@@ -135,9 +147,14 @@ public class DataInitializer implements CommandLineRunner {
 
     private String categoryFor(String code) {
         if (code.contains("EMPLOYEE")) return "Employee Management";
+        if (code.contains("AUDIT") || code.contains("LOG")) return "Security and Compliance";
         if (code.contains("DEPARTMENT")) return "Department Management";
         if (code.contains("REPORT")) return "Reporting";
         if (code.contains("ATTENDANCE")) return "Attendance";
+        if (code.contains("LEAVE")) return "Leave";
+        if (code.contains("PAYROLL")) return "Payroll";
+        if (code.contains("ANNOUNCEMENT")) return "Communication";
+        if (code.contains("RECEPTION")) return "Reception";
         return "General";
     }
 }

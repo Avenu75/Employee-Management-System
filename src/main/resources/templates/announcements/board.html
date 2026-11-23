@@ -1,10 +1,137 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Announcements - VitalOps HR')}">
+    <meta charset="utf-8">
+    <title>Announcements - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Noticeboard &amp; Feedback</p>
+            <h1 class="page-title">Announcements</h1>
+            <p class="page-sub">Official communications from management, along with a secure channel for staff suggestions and issues.</p>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="ann-tabs">
+        <a class="ann-tab" th:classappend="${tab == 'administration'} ? 'active'"
+           th:href="@{/announcements(tab='administration')}">Administration Notices</a>
+        <a class="ann-tab" th:classappend="${tab == 'public'} ? 'active'"
+           th:href="@{/announcements(tab='public')}">General Staff News</a>
+    </div>
+
+    <div class="alert alert-info" th:if="${adminRestricted and tab == 'administration'}" role="alert">
+        Administration notices are restricted to designated leadership accounts. You can still submit suggestions or report issues below.
+    </div>
+
+    <!-- Managers: publish an announcement -->
+    <section class="card shadow-sm mb-4 ann-compose" th:if="${manager}">
+        <div class="card-header">
+            <h2>Publish an Announcement</h2>
+        </div>
+        <div class="card-body">
+            <form th:action="@{/announcements/post}" method="post">
+                <input type="hidden" name="kind" value="ANNOUNCEMENT">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label" for="annTitle">Title</label>
+                        <input id="annTitle" type="text" name="title" class="form-control" maxlength="150" placeholder="Summary of notice..." required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="annCategory">Board Destination</label>
+                        <select id="annCategory" name="category" class="form-select">
+                            <option value="ADMINISTRATION" th:selected="${tab == 'administration'}">Administration (Management Only)</option>
+                            <option value="PUBLIC" th:selected="${tab == 'public'}">Public (All Staff)</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="annBody">Message Details</label>
+                        <textarea id="annBody" name="body" rows="4" class="form-control" maxlength="4000" placeholder="Full announcement text..." required></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Publish and Notify Staff</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Employees: send a suggestion or issue to management -->
+    <section class="card shadow-sm mb-4 ann-compose" th:if="${!manager}">
+        <div class="card-header">
+            <h2>Send a Suggestion or Report an Issue</h2>
+        </div>
+        <div class="card-body">
+            <p class="dx-note mb-3 p-0">Only you and authorized management personnel can view what you submit here. Management is notified immediately.</p>
+            <form th:action="@{/announcements/post}" method="post">
+                <input type="hidden" name="category" value="ADMINISTRATION">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label" for="sugTitle">Subject</label>
+                        <input id="sugTitle" type="text" name="title" class="form-control" maxlength="150" placeholder="Topic or summary..." required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="sugKind">Classification</label>
+                        <select id="sugKind" name="kind" class="form-select">
+                            <option value="SUGGESTION">Suggestion</option>
+                            <option value="ISSUE">Issue or Problem</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label" for="sugBody">Details</label>
+                        <textarea id="sugBody" name="body" rows="4" class="form-control" maxlength="4000" placeholder="Provide full details or recommendations..." required></textarea>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary mt-3">Submit to Leadership</button>
+            </form>
+        </div>
+    </section>
+
+    <div class="card shadow-sm p-4 text-center" th:if="${#lists.isEmpty(views)}">
+        <p class="dx-empty text-muted mb-0">Nothing has been posted on this board yet.</p>
+    </div>
+
+    <article class="ann-post" th:each="v : ${views}">
+        <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+            <div>
+                <span class="ann-kind" th:classappend="${v.post.kind.name() == 'SUGGESTION'} ? 'suggestion' : (${v.post.kind.name() == 'ISSUE'} ? 'issue' : '')"
+                      th:text="${v.post.kind.label}">Announcement</span>
+                <h3 th:text="${v.post.title}">Title</h3>
+                <div class="ann-meta">
+                    <span class="fw-semibold text-dark" th:text="${v.post.author.fullName}">Author</span>
+                    &middot; <span th:text="${#temporals.format(v.post.createdAt, 'd MMM yyyy, HH:mm')}">date</span>
+                </div>
+            </div>
+            <form th:if="${v.canDelete}" th:action="@{/announcements/{id}/delete(id=${v.post.id})}" method="post"
+                  onsubmit="return confirm('Delete this post and its replies?');" class="m-0">
+                <input type="hidden" name="tab" th:value="${tab}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+            </form>
+        </div>
+
+        <p class="ann-body" th:text="${v.post.body}">Body</p>
+
+        <div class="ann-replies">
+            <div class="ann-reply" th:each="r : ${v.replies}">
+                <div class="ann-meta">
+                    <strong class="text-dark" th:text="${r.author.fullName}">Name</strong>
+                    &middot; <span th:text="${#temporals.format(r.createdAt, 'd MMM, HH:mm')}">date</span>
+                </div>
+                <p th:text="${r.body}">Reply</p>
+            </div>
+            <form class="ann-reply-form" th:action="@{/announcements/{id}/reply(id=${v.post.id})}" method="post">
+                <input type="hidden" name="tab" th:value="${tab}">
+                <input type="text" name="body" class="form-control" maxlength="2000" placeholder="Write a reply..." required>
+                <button type="submit" class="btn btn-outline-primary">Reply</button>
+            </form>
+        </div>
+    </article>
+</div>
+
 </body>
 </html>

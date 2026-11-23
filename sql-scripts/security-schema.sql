@@ -15,6 +15,7 @@
 
 USE `employee_directory`;
 
+DROP TABLE IF EXISTS `security_audit_log`;
 DROP TABLE IF EXISTS `user_permission`;
 DROP TABLE IF EXISTS `app_user`;
 DROP TABLE IF EXISTS `permission`;
@@ -88,6 +89,22 @@ CREATE TABLE `user_permission` (
   CONSTRAINT `fk_user_permission_granted_by`
     FOREIGN KEY (`granted_by_user_id`) REFERENCES `app_user` (`id`)
     ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+
+-- ---------------------------------------------------------------------
+-- Table: security_audit_log
+-- Records who changed passwords, granted permissions, disabled users,
+-- and other sensitive actions for traceability and incident response.
+-- ---------------------------------------------------------------------
+CREATE TABLE `security_audit_log` (
+  `id`            INT NOT NULL AUTO_INCREMENT,
+  `action`        VARCHAR(120) NOT NULL,
+  `actor_username` VARCHAR(50) DEFAULT NULL,
+  `target_username` VARCHAR(50) DEFAULT NULL,
+  `details`       VARCHAR(500) DEFAULT NULL,
+  `created_at`    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_security_audit_log_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- ---------------------------------------------------------------------

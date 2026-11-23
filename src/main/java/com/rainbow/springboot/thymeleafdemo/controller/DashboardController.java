@@ -36,8 +36,12 @@ public class DashboardController {
             "'CAN_VIEW_REPORTS','CAN_MANAGE_ATTENDANCE','SUPER_ADMIN')")
     public String dashboard(Model theModel) {
 
-        theModel.addAttribute("totalEmployees", employeeService.countTotal());
-        theModel.addAttribute("activeEmployees", employeeService.countActive());
+        long total = employeeService.countTotal();
+        long active = employeeService.countActive();
+        theModel.addAttribute("activeRate", total == 0 ? 0 : (int) Math.round(active * 100.0 / total));
+
+        theModel.addAttribute("totalEmployees", total);
+        theModel.addAttribute("activeEmployees", active);
         theModel.addAttribute("inactiveEmployees", employeeService.countInactive());
         theModel.addAttribute("totalDepartments", departmentService.findAll().size());
         theModel.addAttribute("departmentCounts", employeeService.countByDepartment());

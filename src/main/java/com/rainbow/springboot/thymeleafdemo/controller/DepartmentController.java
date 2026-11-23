@@ -54,8 +54,8 @@ public class DepartmentController {
     @PostMapping("/save")
     @PreAuthorize("hasAnyAuthority('CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')")
     public String saveDepartment(@Valid @ModelAttribute("department") Department theDepartment,
-                                  BindingResult bindingResult,
-                                  RedirectAttributes redirectAttributes) {
+                                 BindingResult bindingResult,
+                                 RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
             return "departments/department-form";
@@ -68,7 +68,7 @@ public class DepartmentController {
         return "redirect:/departments/list";
     }
 
-    @GetMapping("/delete")
+    @PostMapping("/delete")
     @PreAuthorize("hasAnyAuthority('CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')")
     public String delete(@RequestParam("departmentId") int theId, RedirectAttributes redirectAttributes) {
         Department department = departmentService.findById(theId);

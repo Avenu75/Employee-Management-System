@@ -5,7 +5,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.Model;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.dao.DataAccessException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
@@ -42,6 +44,13 @@ public class GlobalExceptionHandler {
         return "error";
     }
 
+    @ExceptionHandler(OtherWorkerNotFoundException.class)
+    public String handleOtherWorkerNotFound(OtherWorkerNotFoundException ex, Model model) {
+        log.error("Other worker not found: {}", ex.getMessage());
+        model.addAttribute("errorMessage", ex.getMessage());
+        return "error";
+    }
+
     @ExceptionHandler(PermissionNotFoundException.class)
     public String handlePermissionNotFound(PermissionNotFoundException ex, Model model) {
         log.error("Permission not found: {}", ex.getMessage());
@@ -66,6 +75,27 @@ public class GlobalExceptionHandler {
     public String handleAccessDenied(AccessDeniedException ex, Model model) {
         log.warn("Access denied: {}", ex.getMessage());
         model.addAttribute("errorMessage", "You do not have permission to perform this action.");
+        return "error";
+    }
+
+    /**
+     * Thrown when an uploaded file is larger than the limits set in
+     * spring.servlet.multipart.max-file-size / max-request-size.
+     */
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public String handleMaxUploadSize(MaxUploadSizeExceededException ex, Model model) {
+        log.warn("Upload too large: {}", ex.getMessage());
+        model.addAttribute("errorMessage", "The file you uploaded is too large. The limit is 10 MB per file.");
+        return "error";
+    }
+
+    /** Typically a table or column that the SQL migration scripts have not created yet. */
+    @ExceptionHandler(DataAccessException.class)
+    public String handleDatabase(DataAccessException ex, Model model) {
+        log.error("Database error", ex);
+        model.addAttribute("errorMessage",
+                "A database error occurred. If this page was added in a recent update, ask the administrator "
+                        + "to run the latest SQL migration script, then try again.");
         return "error";
     }
 

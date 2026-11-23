@@ -1,10 +1,122 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+<!DOCTYPE HTML>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head('Reception Gate - VitalOps HR')}">
+    <meta charset="utf-8">
+    <title>Reception Gate - VitalOps HR</title>
 </head>
 <body>
-$END$
+
+<div th:replace="~{fragments/nav :: navbar}"></div>
+
+<div class="container page-shell mt-4 mb-5">
+
+    <div class="page-header">
+        <div class="page-header-main">
+            <p class="page-eyebrow">Front Desk &amp; Security</p>
+            <h1 class="page-title">Reception Gate Attendance</h1>
+            <p class="page-sub">Monitor personnel arrivals, verify site presence, and register departures in real time.</p>
+        </div>
+        <div class="page-date" th:text="${#temporals.format(date, 'EEEE, d MMMM yyyy')}">Today</div>
+    </div>
+
+    <div th:replace="~{fragments/flash :: flash}"></div>
+
+    <div class="ann-tabs mb-3">
+        <a class="ann-tab" th:classappend="${group == 'employees'} ? 'active'" th:href="@{/reception(group='employees')}">Regular Employees</a>
+        <a class="ann-tab" th:classappend="${group == 'workers'} ? 'active'" th:href="@{/reception(group='workers')}">Contractors &amp; Support Staff</a>
+    </div>
+
+    <div class="rc-summary mb-4">
+        <div class="rc-card"><div class="n" th:text="${summary.total}">0</div><div class="l" th:text="${group == 'employees' ? 'Active employees' : 'Active workers'}">Active</div></div>
+        <div class="rc-card"><div class="n" th:text="${summary.onSite}">0</div><div class="l">On site now</div></div>
+        <div class="rc-card"><div class="n" th:text="${summary.left}">0</div><div class="l">Left for the day</div></div>
+        <div class="rc-card"><div class="n" th:text="${summary.late}">0</div><div class="l">Arrived late</div></div>
+        <div class="rc-card"><div class="n" th:text="${summary.absent}">0</div><div class="l">Marked absent</div></div>
+        <div class="rc-card"><div class="n" th:text="${summary.waiting}">0</div><div class="l">Awaiting arrival</div></div>
+    </div>
+
+    <div class="search-panel mb-4">
+        <form class="d-flex align-items-center gap-2 flex-wrap" th:action="@{/reception}" method="get">
+            <input type="hidden" name="group" th:value="${group}">
+            <div class="flex-grow-1" style="min-width: 220px;">
+                <input type="text" name="q" class="form-control" th:value="${q}" placeholder="Filter by name or duty/role...">
+            </div>
+            <div style="min-width: 170px;">
+                <input type="date" name="date" class="form-control" th:value="${date}" th:max="${today}">
+            </div>
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a th:href="@{/reception(group=${group})}" class="btn btn-outline-secondary">Jump to Today</a>
+        </form>
+    </div>
+
+    <div class="alert alert-info" th:if="${!isToday}" role="alert">
+        You are viewing a past date. Real-time check-in and check-out actions can only be recorded for today's date.
+    </div>
+
+    <section class="card shadow-sm">
+        <div class="card-body p-0">
+            <div class="table-shell m-0 border-0 shadow-none">
+                <table class="table align-middle mb-0">
+                    <thead>
+                    <tr><th>Name &amp; Role</th><th>Status</th><th>Clock In</th><th>Clock Out</th><th class="text-end">Actions</th></tr>
+                    </thead>
+                    <tbody>
+                    <tr th:if="${#lists.isEmpty(rows)}">
+                        <td colspan="5" class="dx-empty text-center py-5">
+                            <p class="text-muted mb-0">No personnel match the specified search or filter.</p>
+                        </td>
+                    </tr>
+                    <tr th:each="row : ${rows}">
+                        <td>
+                            <div class="fw-semibold text-dark" th:text="${row.name}">Name</div>
+                            <small class="text-muted" th:text="${row.detail}">Role</small>
+                        </td>
+                        <td>
+                            <span class="dx-chip mute" th:if="${row.state == 'NONE'}">Not arrived</span>
+                            <span class="dx-chip good" th:if="${row.state == 'IN' and !row.late}">On site</span>
+                            <span class="dx-chip warn" th:if="${row.state == 'IN' and row.late}">On site (late)</span>
+                            <span class="dx-chip info" th:if="${row.state == 'LEAVE'}">On leave</span>
+                            <span class="dx-chip info" th:if="${row.state == 'OUT'}">Departed</span>
+                            <span class="dx-chip bad" th:if="${row.state == 'ABSENT'}">Absent</span>
+                        </td>
+                        <td class="dx-time" th:text="${row.checkIn != null ? #temporals.format(row.checkIn, 'HH:mm') : '-'}">-</td>
+                        <td class="dx-time" th:text="${row.checkOut != null ? #temporals.format(row.checkOut, 'HH:mm') : '-'}">-</td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1 flex-wrap justify-content-end" th:if="${isToday and row.state != 'LEAVE'}">
+                                <form th:if="${row.state == 'NONE' or row.state == 'ABSENT'}" th:action="@{/reception/check-in}" method="post" class="m-0">
+                                    <input type="hidden" name="group" th:value="${group}">
+                                    <input type="hidden" name="id" th:value="${row.id}">
+                                    <input type="hidden" name="q" th:value="${q}">
+                                    <button type="submit" class="btn btn-sm btn-primary">Check in</button>
+                                </form>
+                                <form th:if="${row.state == 'IN'}" th:action="@{/reception/check-out}" method="post" class="m-0">
+                                    <input type="hidden" name="group" th:value="${group}">
+                                    <input type="hidden" name="id" th:value="${row.id}">
+                                    <input type="hidden" name="q" th:value="${q}">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Check out</button>
+                                </form>
+                                <form th:if="${row.state == 'NONE'}" th:action="@{/reception/absent}" method="post" class="m-0">
+                                    <input type="hidden" name="group" th:value="${group}">
+                                    <input type="hidden" name="id" th:value="${row.id}">
+                                    <input type="hidden" name="q" th:value="${q}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Absent</button>
+                                </form>
+                                <form th:if="${row.state != 'NONE'}" th:action="@{/reception/clear}" method="post"
+                                      onsubmit="return confirm('Clear today\'s entry?');" class="m-0">
+                                    <input type="hidden" name="group" th:value="${group}">
+                                    <input type="hidden" name="id" th:value="${row.id}">
+                                    <input type="hidden" name="q" th:value="${q}">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">Undo</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</div>
+
 </body>
 </html>

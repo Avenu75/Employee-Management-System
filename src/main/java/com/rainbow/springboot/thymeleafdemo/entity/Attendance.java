@@ -1,6 +1,8 @@
 package com.rainbow.springboot.thymeleafdemo.entity;
 
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalTime;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -50,6 +52,14 @@ public class Attendance {
     @Column(name = "note", length = 255)
     private String note;
 
+    /** Time the employee clocked in (null when the record was entered manually). */
+    @Column(name = "check_in")
+    private LocalTime checkIn;
+
+    /** Time the employee clocked out (null until they do). */
+    @Column(name = "check_out")
+    private LocalTime checkOut;
+
     public Attendance() {
     }
 
@@ -91,5 +101,30 @@ public class Attendance {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public LocalTime getCheckIn() {
+        return checkIn;
+    }
+
+    public void setCheckIn(LocalTime checkIn) {
+        this.checkIn = checkIn;
+    }
+
+    public LocalTime getCheckOut() {
+        return checkOut;
+    }
+
+    public void setCheckOut(LocalTime checkOut) {
+        this.checkOut = checkOut;
+    }
+
+    /** Hours worked as text such as "7h 32m", or "-" when not both times are known. */
+    public String getWorkedLabel() {
+        if (checkIn == null || checkOut == null || checkOut.isBefore(checkIn)) {
+            return "-";
+        }
+        Duration d = Duration.between(checkIn, checkOut);
+        return d.toHours() + "h " + String.format("%02d", d.toMinutesPart()) + "m";
     }
 }

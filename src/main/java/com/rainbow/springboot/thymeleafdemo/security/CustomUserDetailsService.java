@@ -2,6 +2,7 @@ package com.rainbow.springboot.thymeleafdemo.security;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -50,12 +51,19 @@ import com.rainbow.springboot.thymeleafdemo.entity.UserPermission;
 public class CustomUserDetailsService implements UserDetailsService {
 
     public static final String SUPER_ADMIN_AUTHORITY = "SUPER_ADMIN";
+    /**
+     * Taking other people's attendance is a duty for staff the Super Admin delegates it to.
+     * The Super Admin account itself never exercises these, even though it holds every
+     * permission row; it keeps only its own clock in and clock out.
+     */
+    private static final Set<String> DELEGATED_DUTIES = Set.of(
+            PermissionCode.CAN_MANAGE_ATTENDANCE, PermissionCode.CAN_USE_RECEPTION);
 
     private final AppUserRepository appUserRepository;
     private final UserPermissionRepository userPermissionRepository;
 
     public CustomUserDetailsService(AppUserRepository theAppUserRepository,
-                                     UserPermissionRepository theUserPermissionRepository) {
+                                    UserPermissionRepository theUserPermissionRepository) {
         appUserRepository = theAppUserRepository;
         userPermissionRepository = theUserPermissionRepository;
     }
@@ -96,7 +104,11 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         List<UserPermission> granted = userPermissionRepository.findByUser(appUser);
         for (UserPermission up : granted) {
-            authorities.add(new SimpleGrantedAuthority(up.getPermission().getCode()));
+            String code = up.getPermission().getCode();
+            if (appUser.isSuperAdmin() && DELEGATED_DUTIES.contains(code)) {
+                continue;
+            }
+            authorities.add(new SimpleGrantedAuthority(code));
         }
 
         return authorities;

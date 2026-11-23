@@ -1,10 +1,6 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+<!-- Reusable navigation for the payroll pages -->
+<ul th:fragment="tabs(active, month)" class="nav nav-pills mb-4" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <li class="nav-item"><a class="nav-link" th:classappend="${active == 'run'} ? 'active'" th:href="@{/payroll(month=${month})}">Payroll run</a></li>
+    <li class="nav-item" sec:authorize="hasAnyAuthority('CAN_MANAGE_PAYROLL','SUPER_ADMIN')"><a class="nav-link" th:classappend="${active == 'rules'} ? 'active'" th:href="@{/payroll/settings}">Tax and deductions</a></li>
+    <li class="nav-item" sec:authorize="hasAnyAuthority('CAN_MANAGE_PAYROLL','SUPER_ADMIN')"><a class="nav-link" th:classappend="${active == 'adjustments'} ? 'active'" th:href="@{/payroll/adjustments(month=${month})}">Monthly adjustments</a></li>
+</ul>

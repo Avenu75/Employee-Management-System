@@ -1,4 +1,7 @@
 package com.rainbow.springboot.thymeleafdemo.entity;
 
-public class PayrollRunStatus {
+/** DRAFT can still be regenerated; FINALISED is locked for good. */
+public enum PayrollRunStatus {
+    DRAFT,
+    FINALISED
 }

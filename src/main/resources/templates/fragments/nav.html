@@ -1,58 +1,308 @@
-<!-- Reusable navigation bar fragment.
-     Included in every authenticated page with: th:replace="~{fragments/nav :: navbar}"
-     Every link is wrapped in sec:authorize so a user only ever sees
-     navigation entries for things they are actually allowed to do - this
-     is a UX nicety on top of the real @PreAuthorize enforcement in the
-     Controllers (never a substitute for it). -->
-<nav th:fragment="navbar" class="navbar navbar-expand-lg navbar-dark bg-dark px-3 shadow-sm">
-    <a class="navbar-brand" th:href="@{/}">🏢 Acme Small Business - Staff Portal</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navContent">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navContent">
-        <ul class="navbar-nav me-auto">
-            <li class="nav-item" sec:authorize="hasAnyAuthority('SUPER_ADMIN')">
-                <a class="nav-link" th:href="@{/admin/dashboard}">🛡️ Admin</a>
-            </li>
-            <li class="nav-item" sec:authorize="hasAnyAuthority('SUPER_ADMIN')">
-                <a class="nav-link" th:href="@{/admin/privileges}">Privileges</a>
-            </li>
-            <li class="nav-item" sec:authorize="hasAnyAuthority('SUPER_ADMIN')">
-                <a class="nav-link" th:href="@{/admin/users}">Staff Accounts</a>
-            </li>
-            <li class="nav-item"
-                sec:authorize="hasAnyAuthority('CAN_VIEW_EMPLOYEE','CAN_ADD_EMPLOYEE','CAN_EDIT_EMPLOYEE','CAN_DELETE_EMPLOYEE','CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT','CAN_VIEW_REPORTS','CAN_MANAGE_ATTENDANCE')">
-                <a class="nav-link" th:href="@{/dashboard}">Dashboard</a>
-            </li>
-            <li class="nav-item" sec:authorize="hasAnyAuthority('CAN_VIEW_EMPLOYEE')">
-                <a class="nav-link" th:href="@{/employees/list}">Employees</a>
-            </li>
-            <li class="nav-item" sec:authorize="hasAnyAuthority('CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT')">
-                <a class="nav-link" th:href="@{/departments/list}">Departments</a>
-            </li>
-            <li class="nav-item" sec:authorize="hasAnyAuthority('CAN_VIEW_REPORTS')">
-                <a class="nav-link" th:href="@{/reports}">Reports</a>
-            </li>
-            <li class="nav-item" sec:authorize="hasAnyAuthority('CAN_MANAGE_ATTENDANCE')">
-                <a class="nav-link" th:href="@{/attendance}">Attendance</a>
-            </li>
-            <li class="nav-item"
-                sec:authorize="!hasAnyAuthority('SUPER_ADMIN','CAN_VIEW_EMPLOYEE','CAN_ADD_EMPLOYEE','CAN_EDIT_EMPLOYEE','CAN_DELETE_EMPLOYEE','CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT','CAN_VIEW_REPORTS','CAN_MANAGE_ATTENDANCE')">
-                <a class="nav-link" th:href="@{/profile}">My Profile</a>
-            </li>
-        </ul>
-        <ul class="navbar-nav">
-            <li class="nav-item" sec:authorize="isAuthenticated()">
-                <span class="navbar-text text-light me-3">
-                    Signed in as <strong sec:authentication="name">user</strong>
-                    <span class="badge bg-warning text-dark ms-1" sec:authorize="hasAuthority('SUPER_ADMIN')">Super Admin</span>
-                </span>
-            </li>
-            <li class="nav-item">
-                <form th:action="@{/logout}" method="post" class="d-inline">
-                    <button type="submit" class="btn btn-outline-light btn-sm">Log out</button>
+<!-- Reusable side navigation, included in every signed-in page with: th:replace="~{fragments/nav :: navbar}"
+     The fragment loads enterprise.css, theme.css and the Bootstrap bundle itself, so every page behaves the same.
+     Do NOT also include bootstrap.bundle.min.js in page templates (double-loading breaks dropdowns and modals).
+     Every link is wrapped in sec:authorize so a user only sees what they may use; the real enforcement is
+     still @PreAuthorize in the controllers. On phones the sidebar slides in from the left. -->
+<div th:fragment="navbar" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+    <script>
+        /* Apply the saved theme before the page paints (light is the default) and reserve room for the sidebar. */
+        (function () {
+            try {
+                var t = localStorage.getItem('vitalops-theme');
+                if (t === 'dark' || t === 'light') { document.documentElement.setAttribute('data-theme', t); }
+            } catch (e) { }
+            try {
+                var saved = localStorage.getItem('vitalops-sidebar');
+                var narrow = window.innerWidth < 1200;     /* tablets start collapsed unless the user chose otherwise */
+                if (saved === 'collapsed' || (saved !== 'expanded' && narrow)) { document.documentElement.classList.add('side-collapsed'); }
+            } catch (e) { }
+            document.body.classList.add('has-side');
+        })();
+    </script>
+    <link rel="stylesheet" th:href="@{/css/enterprise.css}">
+    <link rel="stylesheet" th:href="@{/css/theme.css}">
+
+    <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+        <symbol id="i-dashboard" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></symbol>
+        <symbol id="i-reports" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></symbol>
+        <symbol id="i-users" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+        <symbol id="i-briefcase" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></symbol>
+        <symbol id="i-building" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01M12 6h.01M16 6h.01M8 10h.01M12 10h.01M16 10h.01M8 14h.01M12 14h.01M16 14h.01"/></symbol>
+        <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+        <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></symbol>
+        <symbol id="i-register" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 14l2 2 4-4"/></symbol>
+        <symbol id="i-gate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></symbol>
+        <symbol id="i-leave" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></symbol>
+        <symbol id="i-payroll" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></symbol>
+        <symbol id="i-megaphone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></symbol>
+        <symbol id="i-mail" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22 6 12 13 2 6"/></symbol>
+        <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+        <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></symbol>
+        <symbol id="i-key" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-7.6 7.6a5.5 5.5 0 1 1-7.8 7.8 5.5 5.5 0 0 1 7.8-7.8zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></symbol>
+        <symbol id="i-audit" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></symbol>
+        <symbol id="i-sliders" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></symbol>
+        <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+        <symbol id="i-collapse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></symbol>
+        <symbol id="i-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+        <symbol id="i-logout" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+    </svg>
+
+    <header class="mobile-bar">
+        <button type="button" id="sideOpen" class="mobile-menu" aria-label="Open menu" aria-controls="sidebar"><svg class="ico" aria-hidden="true"><use href="#i-menu"/></svg></button>
+        <span class="mobile-brand">VitalOps HR</span>
+        <a class="mobile-bell" th:href="@{/notifications}" aria-label="Notifications"><svg class="ico" aria-hidden="true"><use href="#i-bell"/></svg><span class="nav-count"
+                                                                                                                                                           th:if="${unreadNotifications != null and unreadNotifications > 0}"
+                                                                                                                                                           th:text="${unreadNotifications > 99 ? '99+' : unreadNotifications}">3</span></a>
+    </header>
+    <div class="side-backdrop" id="sideBackdrop"></div>
+
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+        <div class="side-head">
+            <a class="side-brand" th:href="@{/}" data-tip="VitalOps HR"><span class="brand-mark">V</span><span class="side-text">VitalOps HR</span></a>
+            <button type="button" id="sideToggle" class="side-toggle" aria-label="Collapse or expand the sidebar" data-tip="Expand menu"><svg class="ico" aria-hidden="true"><use href="#i-collapse"/></svg></button>
+        </div>
+
+        <nav class="side-scroll">
+            <div class="side-group" sec:authorize="hasAnyAuthority('SUPER_ADMIN','CAN_VIEW_EMPLOYEE','CAN_ADD_EMPLOYEE','CAN_EDIT_EMPLOYEE','CAN_DELETE_EMPLOYEE','CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT','CAN_VIEW_REPORTS','CAN_MANAGE_ATTENDANCE')">
+                <div class="side-label">Overview</div>
+                <a class="side-link" th:href="@{/dashboard}" data-tip="Dashboard"><svg class="ico" aria-hidden="true"><use href="#i-dashboard"/></svg><span class="side-text">Dashboard</span></a>
+                <a class="side-link" th:href="@{/reports}" data-tip="Reports" sec:authorize="hasAuthority('CAN_VIEW_REPORTS')"><svg class="ico" aria-hidden="true"><use href="#i-reports"/></svg><span class="side-text">Reports</span></a>
+            </div>
+
+            <div class="side-group" sec:authorize="hasAnyAuthority('CAN_VIEW_EMPLOYEE','CAN_ADD_EMPLOYEE','CAN_EDIT_EMPLOYEE','CAN_DELETE_EMPLOYEE','CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT','SUPER_ADMIN')">
+                <div class="side-label">People</div>
+                <a class="side-link" th:href="@{/employees/list}" data-tip="Employees" sec:authorize="hasAnyAuthority('CAN_VIEW_EMPLOYEE','SUPER_ADMIN')"><svg class="ico" aria-hidden="true"><use href="#i-users"/></svg><span class="side-text">Employees</span></a>
+                <a class="side-link" th:href="@{/other-workers/list}" data-tip="Other Workers" sec:authorize="hasAnyAuthority('CAN_VIEW_EMPLOYEE','CAN_ADD_EMPLOYEE','CAN_EDIT_EMPLOYEE','CAN_DELETE_EMPLOYEE','SUPER_ADMIN')"><svg class="ico" aria-hidden="true"><use href="#i-briefcase"/></svg><span class="side-text">Other Workers</span></a>
+                <a class="side-link" th:href="@{/departments/list}" data-tip="Departments" sec:authorize="hasAnyAuthority('CAN_VIEW_DEPARTMENT','CAN_MANAGE_DEPARTMENT')"><svg class="ico" aria-hidden="true"><use href="#i-building"/></svg><span class="side-text">Departments</span></a>
+            </div>
+
+            <div class="side-group">
+                <div class="side-label">Time &amp; Pay</div>
+                <a class="side-link" th:href="@{/my-attendance}" data-tip="My attendance" th:if="${currentUser != null and currentUser.employee != null}"><svg class="ico" aria-hidden="true"><use href="#i-clock"/></svg><span class="side-text">My attendance</span></a>
+                <a class="side-link" th:href="@{/leave}" data-tip="My leave" th:if="${currentUser != null and currentUser.employee != null}"><svg class="ico" aria-hidden="true"><use href="#i-calendar"/></svg><span class="side-text">My leave</span></a>
+                <a class="side-link" th:href="@{/attendance}" data-tip="Attendance register" sec:authorize="hasAuthority('CAN_MANAGE_ATTENDANCE')"><svg class="ico" aria-hidden="true"><use href="#i-register"/></svg><span class="side-text">Attendance register</span></a>
+                <a class="side-link" th:href="@{/reception}" data-tip="Reception gate" sec:authorize="hasAuthority('CAN_USE_RECEPTION')"><svg class="ico" aria-hidden="true"><use href="#i-gate"/></svg><span class="side-text">Reception gate</span></a>
+                <a class="side-link" th:href="@{/leave/manage}" data-tip="Leave requests" sec:authorize="hasAnyAuthority('CAN_MANAGE_LEAVE','SUPER_ADMIN')"><svg class="ico" aria-hidden="true"><use href="#i-leave"/></svg><span class="side-text">Leave requests</span></a>
+                <a class="side-link" th:href="@{/payroll}" data-tip="Payroll" sec:authorize="hasAnyAuthority('CAN_VIEW_PAYROLL','CAN_MANAGE_PAYROLL','SUPER_ADMIN')"><svg class="ico" aria-hidden="true"><use href="#i-payroll"/></svg><span class="side-text">Payroll</span></a>
+            </div>
+
+            <div class="side-group">
+                <div class="side-label">Communication</div>
+                <a class="side-link" th:href="@{/announcements}" data-tip="Announcements"><svg class="ico" aria-hidden="true"><use href="#i-megaphone"/></svg><span class="side-text">Announcements</span></a>
+                <a class="side-link" th:href="@{/messages}" data-tip="Messages"><svg class="ico" aria-hidden="true"><use href="#i-mail"/></svg><span class="side-text">Messages</span><span class="nav-count"
+                                                                                                                                                                                            th:if="${unreadMessages != null and unreadMessages > 0}"
+                                                                                                                                                                                            th:text="${unreadMessages > 99 ? '99+' : unreadMessages}">2</span></a>
+                <a class="side-link" th:href="@{/notifications}" data-tip="Notifications"><svg class="ico" aria-hidden="true"><use href="#i-bell"/></svg><span class="side-text">Notifications</span><span class="nav-count"
+                                                                                                                                                                                                           th:if="${unreadNotifications != null and unreadNotifications > 0}"
+                                                                                                                                                                                                           th:text="${unreadNotifications > 99 ? '99+' : unreadNotifications}">3</span></a>
+            </div>
+
+            <div class="side-group" sec:authorize="hasAnyAuthority('SUPER_ADMIN','CAN_VIEW_AUDIT_LOG')">
+                <div class="side-label">Administration</div>
+                <a class="side-link" th:href="@{/admin/dashboard}" data-tip="Admin dashboard" sec:authorize="hasAuthority('SUPER_ADMIN')"><svg class="ico" aria-hidden="true"><use href="#i-shield"/></svg><span class="side-text">Admin dashboard</span></a>
+                <a class="side-link" th:href="@{/admin/users}" data-tip="Staff accounts" sec:authorize="hasAuthority('SUPER_ADMIN')"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg><span class="side-text">Staff accounts</span></a>
+                <a class="side-link" th:href="@{/admin/privileges}" data-tip="Privileges" sec:authorize="hasAuthority('SUPER_ADMIN')"><svg class="ico" aria-hidden="true"><use href="#i-key"/></svg><span class="side-text">Privileges</span></a>
+                <a class="side-link" th:href="@{/admin/audit-log}" data-tip="Audit log"><svg class="ico" aria-hidden="true"><use href="#i-audit"/></svg><span class="side-text">Audit log</span></a>
+            </div>
+
+            <div class="side-group">
+                <div class="side-label">Account</div>
+                <a class="side-link" th:href="@{/profile}" data-tip="My profile"><svg class="ico" aria-hidden="true"><use href="#i-user"/></svg><span class="side-text">My profile</span></a>
+                <a class="side-link" th:href="@{/profile/edit}" data-tip="Account settings"><svg class="ico" aria-hidden="true"><use href="#i-sliders"/></svg><span class="side-text">Account settings</span></a>
+            </div>
+        </nav>
+
+        <div class="side-foot">
+            <div class="side-presence" th:if="${managementPresence != null and !#lists.isEmpty(managementPresence)}">
+                <div class="side-label">Management</div>
+                <div class="presence-row" th:each="p : ${managementPresence}">
+                    <span class="presence-dot" th:classappend="${p.inOffice} ? 'on'"></span>
+                    <span class="presence-name" th:text="${p.name}">Name</span>
+                    <span class="presence-state" th:text="${p.label}">In</span>
+                </div>
+            </div>
+
+            <div class="side-user" th:attr="data-tip=${currentUser != null ? currentUser.fullName : 'User'}">
+                <img th:src="${currentUserProfileImage}" class="user-avatar" data-tip="Profile" alt="" width="40" height="40" />
+                <div class="side-user-text">
+                    <span class="user-display-name" th:text="${currentUser != null ? currentUser.fullName : 'User'}">User</span>
+                    <small class="user-role-label" th:text="${currentUserRoleLabel}">Staff</small>
+                </div>
+            </div>
+            <div class="side-actions">
+                <button type="button" id="themeToggle" class="theme-toggle" aria-pressed="false" data-tip="Dark mode"><svg class="ico" aria-hidden="true"><use href="#i-moon"/></svg><span class="side-text" id="themeLabel">Dark mode</span></button>
+                <form th:action="@{/logout}" method="post" id="logoutForm" class="m-0">
+                    <button type="button" class="side-logout" id="logoutBtn" data-tip="Logout" aria-haspopup="dialog"><svg class="ico" aria-hidden="true"><use href="#i-logout"/></svg><span class="side-text">Logout</span></button>
                 </form>
-            </li>
-        </ul>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Accessible Logout Confirmation Modal -->
+    <div id="logoutConfirmModal" class="logout-modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="logoutModalTitle" tabindex="-1">
+        <div class="logout-modal-dialog" role="document">
+            <div class="logout-modal-head">
+                <h3 id="logoutModalTitle">Log out of VitalOps HR?</h3>
+                <button type="button" class="btn-close" id="logoutModalClose" aria-label="Close"></button>
+            </div>
+            <div class="logout-modal-body">
+                Are you sure you want to log out of your session? You will need to sign in again to access the Staff Portal.
+            </div>
+            <div class="logout-modal-foot">
+                <button type="button" class="btn btn-outline-secondary" id="logoutCancelBtn">Stay signed in</button>
+                <button type="button" class="btn btn-danger" id="logoutConfirmBtn">Log out</button>
+            </div>
+        </div>
     </div>
-</nav>
+
+    <div th:if="${clockReminder != null}" class="clock-banner" th:classappend="${clockReminder.out} ? 'is-out'" role="status">
+        <div class="inner">
+        <span><strong th:text="${clockReminder.out} ? 'Close of work:' : 'Good day:'">Good day:</strong>
+            <span th:text="${clockReminder.message}">Please clock in.</span></span>
+            <form th:if="${!clockReminder.out}" th:action="@{/my-attendance/clock-in}" method="post" class="m-0">
+                <button type="submit" class="btn btn-sm btn-dark">Clock in now</button>
+            </form>
+            <form th:if="${clockReminder.out}" th:action="@{/my-attendance/clock-out}" method="post" class="m-0">
+                <button type="submit" class="btn btn-sm btn-dark">Clock out now</button>
+            </form>
+        </div>
+    </div>
+
+    <script th:src="@{/js/bootstrap.bundle.min.js}"></script>
+    <script>
+        (function () {
+            var root = document.documentElement;
+
+            /* Dark / light toggle */
+            var btn = document.getElementById('themeToggle');
+            function current() { return root.getAttribute('data-theme') === 'dark' ? 'dark' : 'light'; }
+            function paint() {
+                var dark = current() === 'dark';
+                var label = document.getElementById('themeLabel');
+                if (label) { label.textContent = dark ? 'Light mode' : 'Dark mode'; }
+                if (btn) {
+                    btn.setAttribute('data-tip', dark ? 'Light mode' : 'Dark mode');
+                    btn.setAttribute('aria-pressed', dark ? 'true' : 'false');
+                }
+            }
+            if (btn) {
+                btn.addEventListener('click', function () {
+                    var next = current() === 'dark' ? 'light' : 'dark';
+                    root.setAttribute('data-theme', next);
+                    try { localStorage.setItem('vitalops-theme', next); } catch (e) { }
+                    paint();
+                });
+                paint();
+            }
+
+            /* Collapse / expand (desktop and tablet); the choice is remembered */
+            var toggle = document.getElementById('sideToggle');
+            function collapsed() { return root.classList.contains('side-collapsed'); }
+            function paintToggle() {
+                if (!toggle) return;
+                toggle.setAttribute('data-tip', collapsed() ? 'Expand menu' : 'Collapse menu');
+                toggle.setAttribute('aria-expanded', collapsed() ? 'false' : 'true');
+            }
+            if (toggle) {
+                toggle.addEventListener('click', function () {
+                    root.classList.toggle('side-collapsed');
+                    try { localStorage.setItem('vitalops-sidebar', collapsed() ? 'collapsed' : 'expanded'); } catch (e) { }
+                    paintToggle(); hideTip();
+                });
+                paintToggle();
+            }
+
+            /* Tooltips for the icon-only (collapsed) sidebar */
+            var tip = document.createElement('div');
+            tip.className = 'side-tip'; tip.setAttribute('role', 'tooltip');
+            document.body.appendChild(tip);
+            function hideTip() { tip.classList.remove('show'); }
+            function showTip(el) {
+                if (!collapsed() || window.innerWidth < 768) { return; }
+                var text = el.getAttribute('data-tip'); if (!text) { return; }
+                var r = el.getBoundingClientRect();
+                tip.textContent = text;
+                tip.style.left = (r.right + 10) + 'px';
+                tip.style.top = (r.top + r.height / 2) + 'px';
+                tip.classList.add('show');
+            }
+            document.querySelectorAll('#sidebar [data-tip]').forEach(function (el) {
+                el.addEventListener('mouseenter', function () { showTip(el); });
+                el.addEventListener('focus', function () { showTip(el); });
+                el.addEventListener('mouseleave', hideTip);
+                el.addEventListener('blur', hideTip);
+            });
+            var sideEl = document.getElementById('sidebar');
+            if (sideEl) { sideEl.addEventListener('scroll', hideTip, true); }
+
+            /* Phone menu: slide the sidebar in and out */
+            var side = document.getElementById('sidebar');
+            var backdrop = document.getElementById('sideBackdrop');
+            function setOpen(open) {
+                if (side) side.classList.toggle('open', open);
+                if (backdrop) backdrop.classList.toggle('show', open);
+            }
+            var sideOpenBtn = document.getElementById('sideOpen');
+            if (sideOpenBtn) { sideOpenBtn.addEventListener('click', function () { setOpen(true); }); }
+            if (backdrop) { backdrop.addEventListener('click', function () { setOpen(false); }); }
+
+            /* Highlight the link for the current page (the longest matching path wins) */
+            var path = location.pathname, best = null, bestLen = 0;
+            document.querySelectorAll('.side-link').forEach(function (a) {
+                var href = (a.getAttribute('href') || '').split('?')[0];
+                if ((path === href || path.indexOf(href + '/') === 0) && href.length > bestLen) { best = a; bestLen = href.length; }
+            });
+            if (best) { best.classList.add('active'); best.setAttribute('aria-current', 'page'); }
+            var active = document.querySelector('.side-link.active');
+            if (active && active.scrollIntoView) { active.scrollIntoView({ block: 'nearest' }); }
+
+            /* Accessible Logout Confirmation Modal Handling */
+            var logoutBtn = document.getElementById('logoutBtn');
+            var logoutModal = document.getElementById('logoutConfirmModal');
+            var logoutCancel = document.getElementById('logoutCancelBtn');
+            var logoutConfirm = document.getElementById('logoutConfirmBtn');
+            var logoutClose = document.getElementById('logoutModalClose');
+            var logoutForm = document.getElementById('logoutForm');
+
+            function openLogoutModal() {
+                if (!logoutModal) return;
+                logoutModal.classList.add('show');
+                if (logoutCancel) logoutCancel.focus();
+            }
+            function closeLogoutModal() {
+                if (!logoutModal) return;
+                logoutModal.classList.remove('show');
+                if (logoutBtn) logoutBtn.focus();
+            }
+
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    openLogoutModal();
+                });
+            }
+            if (logoutCancel) { logoutCancel.addEventListener('click', closeLogoutModal); }
+            if (logoutClose) { logoutClose.addEventListener('click', closeLogoutModal); }
+            if (logoutConfirm) {
+                logoutConfirm.addEventListener('click', function () {
+                    if (logoutForm) logoutForm.submit();
+                });
+            }
+            if (logoutModal) {
+                logoutModal.addEventListener('click', function (e) {
+                    if (e.target === logoutModal) { closeLogoutModal(); }
+                });
+            }
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') {
+                    if (logoutModal && logoutModal.classList.contains('show')) {
+                        closeLogoutModal();
+                    } else {
+                        setOpen(false);
+                    }
+                }
+            });
+        })();
+    </script>
+</div>

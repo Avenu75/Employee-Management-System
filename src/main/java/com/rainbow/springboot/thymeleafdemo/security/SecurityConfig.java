@@ -2,15 +2,24 @@ package com.rainbow.springboot.thymeleafdemo.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
+
+import com.rainbow.springboot.thymeleafdemo.service.AuditLogService;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Central security configuration for the application.
@@ -66,24 +75,44 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider(CustomUserDetailsService userDetailsService,
-                                                              PasswordEncoder passwordEncoder) {
+                                                            PasswordEncoder passwordEncoder) {
         DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
+        // Check "enabled" only AFTER the password has been verified, so the "account disabled"
+        // message is shown to the real owner and never reveals which usernames exist.
+        provider.setPreAuthenticationChecks(user -> { });
+        provider.setPostAuthenticationChecks(user -> {
+            if (!user.isEnabled()) {
+                throw new DisabledException("User account is disabled");
+            }
+        });
         return provider;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http,
-                                            DaoAuthenticationProvider authenticationProvider,
-                                            PrivilegeBasedLoginSuccessHandler loginSuccessHandler) throws Exception {
+                                           DaoAuthenticationProvider authenticationProvider,
+                                           PrivilegeBasedLoginSuccessHandler loginSuccessHandler,
+                                           AuditLogService auditLogService,
+                                           LoginAttemptService loginAttemptService) throws Exception {
 
         http.authenticationProvider(authenticationProvider);
+        http.addFilterBefore(new LoginThrottleFilter(loginAttemptService),
+                UsernamePasswordAuthenticationFilter.class);
 
         http.authorizeHttpRequests(configurer -> configurer
                 // Public landing page + login page + static assets: visible with NO login.
                 // No employee/business data is ever served from these URLs.
                 .requestMatchers("/", "/login", "/css/**", "/js/**", "/images/**", "/webjars/**").permitAll()
+
+                // Staff users can be granted explicit access to view the audit log while the
+                // Super Admin retains full access to the management endpoints.
+                .requestMatchers("/admin/audit-log").hasAnyAuthority(
+                        CustomUserDetailsService.SUPER_ADMIN_AUTHORITY,
+                        PermissionCode.CAN_VIEW_AUDIT_LOG)
+                .requestMatchers(HttpMethod.POST, "/admin/audit-log/delete/**", "/admin/audit-log/clear")
+                .hasAuthority(CustomUserDetailsService.SUPER_ADMIN_AUTHORITY)
 
                 // System-level settings (granting/revoking privileges, user management)
                 // are reserved for the single Super Admin account only. This is enforced
@@ -104,10 +133,13 @@ public class SecurityConfig {
         http.formLogin(form -> form
                 .loginPage("/login")
                 .successHandler(loginSuccessHandler)
+                .failureHandler((request, response, exception) -> response.sendRedirect(
+                        request.getContextPath() + (exception instanceof DisabledException ? "/login?disabled" : "/login?error")))
                 .permitAll());
 
         http.logout(logout -> logout
                 .logoutUrl("/logout")
+                .logoutSuccessHandler(logoutSuccessHandler(auditLogService))
                 .logoutSuccessUrl("/")
                 .permitAll());
 
@@ -127,5 +159,18 @@ public class SecurityConfig {
                 .expiredUrl("/login?expired"));
 
         return http.build();
+    }
+
+    @Bean
+    public LogoutSuccessHandler logoutSuccessHandler(AuditLogService auditLogService) {
+        return (request, response, authentication) -> {
+            String username = authentication != null ? authentication.getName() : null;
+            if (username != null) {
+                auditLogService.record("LOGOUT", username, null,
+                        "User logged out successfully.");
+            }
+            SecurityContextHolder.clearContext();
+            response.sendRedirect("/");
+        };
     }
 }
